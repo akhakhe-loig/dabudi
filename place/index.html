@@ -992,6 +992,88 @@ body[data-theme=dark] .amb-grain,body[data-theme=midnight] .amb-grain{opacity:.4
 @keyframes sbItem{from{opacity:0;transform:translateX(-9px)}to{opacity:1;transform:none}}
 @keyframes brandBreathe{0%,100%{box-shadow:0 4px 12px var(--glow)}50%{box-shadow:0 7px 24px var(--glow)}}
 
+/* ============================================================= */
+/* ===== ПЕТ-ПОМОЩНИК + УМНОЕ МЕНЮ ============================= */
+/*  Плавающий ассистент слева снизу. Кликает существующие         */
+/*  контролы приложения — никакой новой бизнес-логики.            */
+/* ============================================================= */
+#petDock{position:fixed;left:calc(var(--sbw) + 22px);bottom:22px;z-index:58;width:var(--pet,56px);height:var(--pet,56px)}
+body.noauth #petDock{display:none}
+body:has(#overlay:not(.hidden)) #petDock,
+body:has(.lightbox) #petDock{opacity:0;pointer-events:none;transform:translateY(10px)}
+@media(max-width:900px){#petDock{left:16px;bottom:16px;--pet:52px}}
+
+.pet-btn{position:relative;width:100%;height:100%;border:none;padding:0;background:none;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;filter:drop-shadow(0 9px 20px var(--glow));
+  transition:transform .35s var(--spring)}
+.pet-btn:hover{transform:translateY(-3px) scale(1.05)}
+.pet-btn:active{transform:scale(.93)}
+.pet-btn:focus-visible{outline:none}
+.pet-btn:focus-visible .pet-face{filter:drop-shadow(0 0 0 3px var(--acc-line))}
+.pet-glow{position:absolute;inset:-42%;border-radius:50%;z-index:-1;opacity:.6;
+  background:radial-gradient(circle,var(--glow),transparent 66%);animation:petGlow 5s ease-in-out infinite}
+@keyframes petGlow{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.16);opacity:.78}}
+.pet-face{width:100%;height:100%;overflow:visible;transform-origin:50% 88%;animation:petBreathe 5.5s ease-in-out infinite}
+@keyframes petBreathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
+.pet-face.nod{animation:petNod .52s var(--spring)}
+@keyframes petNod{0%{transform:translateY(0)}35%{transform:translateY(4px) scale(.97)}100%{transform:translateY(0)}}
+.pet-head-hi{fill:#fff;opacity:.20}
+.pet-shade{fill:#000;opacity:.12}
+.pet-visor{fill:#0d1120}
+.pet-eye{fill:#eaf6ff}
+.pet-pupil{fill:#0e1430}
+.pet-mouth{fill:#eaf6ff;opacity:.45}
+.pet-antenna{stroke:var(--acc);stroke-width:2.4;stroke-linecap:round}
+.pet-led{fill:var(--acc);animation:petLed 2.6s ease-in-out infinite}
+@keyframes petLed{0%,100%{opacity:1}50%{opacity:.28}}
+#petEyes{transform-box:fill-box;transform-origin:center;transition:transform .12s var(--ease)}
+#petEyes.blink{transform:scaleY(.1)}
+
+/* --- панель ассистента --- */
+.pet-panel{position:absolute;left:0;bottom:calc(100% + 14px);width:300px;max-width:78vw;
+  max-height:min(70vh,540px);overflow:auto;
+  background:var(--glass-bg);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);
+  border:1px solid var(--glass-brd);border-radius:20px;box-shadow:var(--shadow-pop);padding:14px;
+  transform-origin:0 100%;opacity:0;transform:translateY(12px) scale(.94);pointer-events:none;
+  transition:opacity .26s var(--ease),transform .42s var(--spring)}
+.pet-panel.open{opacity:1;transform:none;pointer-events:auto}
+.pp-head{display:flex;align-items:center;gap:10px}
+.pp-emblem{width:34px;height:34px;flex:0 0 34px;border-radius:11px;background:linear-gradient(140deg,var(--acc),var(--acc2));position:relative;box-shadow:0 4px 12px var(--glow)}
+.pp-emblem::before,.pp-emblem::after{content:'';position:absolute;top:13px;width:4px;height:6px;border-radius:2px;background:#eaf6ff}
+.pp-emblem::before{left:11px}.pp-emblem::after{right:11px}
+.pp-hi{font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.1}
+.pp-sub{font-size:11px;font-weight:600;color:var(--mut);margin-top:1px}
+.pp-x{margin-left:auto;width:26px;height:26px;border:none;background:var(--surface2);border-radius:8px;color:var(--mut);font-size:15px;cursor:pointer;transition:background .12s,color .12s}
+.pp-x:hover{background:var(--red-soft);color:var(--red-ink)}
+.pp-lbl{font-size:9px;font-weight:800;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin:12px 2px 6px}
+.pp-recent{display:flex;gap:6px;flex-wrap:wrap}
+.pp-rc{font-size:10.5px;font-weight:700;color:var(--acc2);background:var(--acc-soft);border:none;border-radius:999px;padding:4px 11px;cursor:pointer;transition:transform .18s var(--spring),filter .15s}
+body[data-theme=dark] .pp-rc,body[data-theme=midnight] .pp-rc{color:var(--ink)}
+.pp-rc:hover{transform:translateY(-1px)}
+.pp-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.pp-nav{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:12px;border:1px solid transparent;background:var(--surface2);cursor:pointer;text-align:left;transition:background .14s,border-color .14s,transform .2s var(--spring)}
+.pp-nav .ico{color:var(--mut);flex:0 0 auto;transition:color .14s}
+.pp-nav .ico svg{width:16px;height:16px}
+.pp-nav .t{font-size:12.5px;font-weight:650;color:var(--ink)}
+.pp-nav:hover{background:var(--acc-soft);border-color:var(--acc-line);transform:translateY(-1px)}
+.pp-nav:hover .ico{color:var(--acc)}
+.pp-nav.on{background:var(--acc-soft);border-color:var(--acc-line)}
+.pp-nav.on .ico{color:var(--acc)}
+.pp-nav.on .t{color:var(--acc2)}
+body[data-theme=dark] .pp-nav.on .t,body[data-theme=midnight] .pp-nav.on .t{color:var(--ink)}
+.pp-quick{display:flex;gap:6px;margin-top:10px;padding-top:12px;border-top:1px solid var(--line)}
+.pp-q{position:relative;flex:1;height:38px;border-radius:11px;border:1px solid transparent;background:var(--surface2);color:var(--mut);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .14s,color .14s,transform .2s var(--spring)}
+.pp-q .ico svg{width:17px;height:17px}
+.pp-q:hover{background:var(--acc-soft);color:var(--acc);transform:translateY(-1px)}
+.pp-q::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%) translateY(3px);
+  background:#22263a;color:#fff;font-size:10px;font-weight:600;letter-spacing:.02em;padding:4px 8px;border-radius:7px;white-space:nowrap;
+  opacity:0;pointer-events:none;transition:opacity .15s,transform .15s}
+.pp-q:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+/* стаггер появления пунктов */
+.pet-panel .pp-grid>*,.pet-panel .pp-quick>*,.pet-panel .pp-recent>*{opacity:0}
+.pet-panel.open .pp-grid>*,.pet-panel.open .pp-quick>*,.pet-panel.open .pp-recent>*{animation:ppItem .4s var(--spring) forwards}
+@keyframes ppItem{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
 </style>
 </head>
 <body>
@@ -4134,6 +4216,110 @@ function openTrSettings(){
     new MutationObserver(readAccent).observe(document.body,{attributes:true,attributeFilter:['data-theme','style']});
   }
   readAccent();resize();start();
+})();
+
+/* ============================================================= */
+/* ===== Пет-помощник + умное меню ============================= */
+/*  Живёт слева снизу: моргает, «дышит», следит за курсором.      */
+/*  Меню — стеклянная панель, которая переиспользует ТОЛЬКО       */
+/*  существующие контролы приложения (клик по табам/кнопкам).    */
+/* ============================================================= */
+(function(){
+  if(!document.body||document.getElementById('petDock'))return;
+  var reduce=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches);
+  var VLBL={projects:'Проекты',ideas:'Идеи',calendar:'Календарь',trends:'Аналитика',digest:'Дайджест',alert:'Alert'};
+  function ic(inner){return '<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg></span>';}
+  var NAV=[
+    {v:'projects',t:'Проекты',  i:'<path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>'},
+    {v:'ideas',   t:'Идеи',     i:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.6 1 1.4 1 2.5h6c0-1.1.3-1.9 1-2.5A6 6 0 0 0 12 3z"/>'},
+    {v:'calendar',t:'Календарь',i:'<rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'},
+    {v:'trends',  t:'Аналитика',i:'<path d="M3 17l6-6 4 4 7-8M14 7h6v6"/>'},
+    {v:'digest',  t:'Дайджест', i:'<path d="M3 10.5l14-6v14l-14-6v-2zM7 14.5v3.5a2 2 0 0 0 4 0v-2M17 8.5a4 4 0 0 1 0 6"/>'},
+    {v:'alert',   t:'Alert',    i:'<path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9zM10.3 20a2 2 0 0 0 3.4 0"/>'}
+  ];
+  function clickId(id){var b=document.getElementById(id);if(b)b.click();}
+  function quickNew(){goView('projects');setTimeout(function(){
+    var bs=document.querySelectorAll('#view .toolbar .btn');
+    for(var i=0;i<bs.length;i++){if(/Создать проект/i.test(bs[i].textContent||'')){bs[i].click();return;}}
+  },40);}
+  var QUICK=[
+    {t:'Поиск',i:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',a:function(){var q=document.getElementById('q');if(q){try{q.focus();q.select();}catch(e){}}}},
+    {t:'Создать проект',i:'<path d="M12 5v14M5 12h14"/>',a:quickNew},
+    {t:'Оформление',i:'<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-.9 2-2 0-1.4-1-1.7-1-3 0-1.2 1-2 2.3-2H17a4 4 0 0 0 4-4c0-4-4.5-7-9-7z"/><circle cx="7.5" cy="11" r=".6"/><circle cx="10" cy="7.5" r=".6"/><circle cx="14.5" cy="7.5" r=".6"/>',a:function(){clickId('btnTheme');}},
+    {t:'Экспорт',i:'<path d="M12 4v10m0 0l-4-4m4 4l4-4M5 19h14"/>',a:function(){clickId('btnExport');}},
+    {t:'Справка',i:'<circle cx="12" cy="12" r="9"/><path d="M9.4 9.5a2.6 2.6 0 1 1 3.6 2.4c-.8.4-1 .9-1 1.9M12 17h.01"/>',a:function(){clickId('btnHelp');}}
+  ];
+
+  var dock=document.createElement('div');dock.id='petDock';
+  dock.innerHTML=
+    '<button class="pet-btn" id="petBtn" aria-label="Помощник Place" title="Помощник">'
+    +'<span class="pet-glow"></span>'
+    +'<svg class="pet-face" viewBox="0 0 64 64" fill="none" aria-hidden="true">'
+    +'<line class="pet-antenna" x1="32" y1="15" x2="32" y2="8"/><circle class="pet-led" cx="32" cy="6" r="3"/>'
+    +'<rect x="9" y="14" width="46" height="42" rx="15" fill="var(--acc)"/>'
+    +'<rect class="pet-head-hi" x="9" y="14" width="46" height="21" rx="15"/>'
+    +'<rect class="pet-shade" x="9" y="41" width="46" height="15" rx="12"/>'
+    +'<rect class="pet-visor" x="15" y="22" width="34" height="24" rx="12"/>'
+    +'<circle cx="9" cy="35" r="2" fill="var(--acc)"/><circle cx="55" cy="35" r="2" fill="var(--acc)"/>'
+    +'<g id="petEyes"><rect class="pet-eye" x="22" y="30" width="6.5" height="10" rx="3.2"/><rect class="pet-eye" x="35.5" y="30" width="6.5" height="10" rx="3.2"/>'
+    +'<g id="petPupils"><circle class="pet-pupil" cx="25.2" cy="35.5" r="1.9"/><circle class="pet-pupil" cx="38.7" cy="35.5" r="1.9"/></g></g>'
+    +'<rect class="pet-mouth" x="27" y="49" width="10" height="2.4" rx="1.2"/></svg></button>'
+    +'<div class="pet-panel" id="petPanel">'
+    +'<div class="pp-head"><span class="pp-emblem"></span><div><div class="pp-hi" id="ppHi">Привет</div><div class="pp-sub">Куда идём?</div></div><button class="pp-x" id="ppX" aria-label="Закрыть">×</button></div>'
+    +'<div class="pp-lbl" id="ppRecentLbl">Недавнее</div><div class="pp-recent" id="ppRecent"></div>'
+    +'<div class="pp-lbl">Разделы</div><div class="pp-grid" id="ppNav"></div>'
+    +'<div class="pp-quick" id="ppQuick"></div></div>';
+  document.body.appendChild(dock);
+
+  var petBtn=document.getElementById('petBtn'),panel=document.getElementById('petPanel'),
+      face=petBtn.querySelector('.pet-face'),eyes=document.getElementById('petEyes'),
+      pupils=document.getElementById('petPupils'),navWrap=document.getElementById('ppNav'),
+      quickWrap=document.getElementById('ppQuick'),recWrap=document.getElementById('ppRecent'),
+      recLbl=document.getElementById('ppRecentLbl');
+
+  function curView(){try{return (state&&state.ui&&state.ui.view)||'projects';}catch(e){return 'projects';}}
+  var RKEY='pi_pet_recent',recent=[];
+  try{recent=JSON.parse(localStorage.getItem(RKEY))||[];}catch(e){recent=[];}
+  function pushRecent(v){recent=[v].concat(recent.filter(function(x){return x!==v;})).slice(0,4);
+    try{localStorage.setItem(RKEY,JSON.stringify(recent));}catch(e){}}
+  function goView(v){var tab=document.querySelector('.tab[data-view="'+v+'"]');
+    if(tab)tab.click();else{try{state.ui.view=v;save();renderApp();}catch(e){}}
+    pushRecent(v);}
+
+  NAV.forEach(function(n,idx){var b=document.createElement('button');b.className='pp-nav';b.dataset.view=n.v;
+    b.style.animationDelay=(idx*0.03)+'s';b.innerHTML=ic(n.i)+'<span class="t">'+n.t+'</span>';
+    b.onclick=function(){goView(n.v);nod();close();};navWrap.appendChild(b);});
+  QUICK.forEach(function(q,idx){var b=document.createElement('button');b.className='pp-q';b.setAttribute('data-tip',q.t);
+    b.setAttribute('aria-label',q.t);b.style.animationDelay=(0.1+idx*0.03)+'s';b.innerHTML=ic(q.i);
+    b.onclick=function(){close();setTimeout(q.a,60);};quickWrap.appendChild(b);});
+
+  function renderRecent(){var cv=curView();var items=recent.filter(function(v){return v!==cv&&VLBL[v];});
+    recWrap.innerHTML='';var show=items.length>0;recWrap.style.display=show?'':'none';recLbl.style.display=show?'':'none';
+    items.slice(0,4).forEach(function(v,idx){var b=document.createElement('button');b.className='pp-rc';b.textContent=VLBL[v];
+      b.style.animationDelay=(idx*0.03)+'s';b.onclick=function(){goView(v);nod();close();};recWrap.appendChild(b);});}
+  function markActive(){var cv=curView();var bs=navWrap.querySelectorAll('.pp-nav');
+    for(var i=0;i<bs.length;i++)bs[i].classList.toggle('on',bs[i].dataset.view===cv);}
+  function greet(){var h=new Date().getHours();return h<6?'Доброй ночи':h<12?'Доброе утро':h<18?'Добрый день':'Добрый вечер';}
+
+  function open(){document.getElementById('ppHi').textContent=greet();renderRecent();markActive();panel.classList.add('open');}
+  function close(){panel.classList.remove('open');}
+  petBtn.onclick=function(e){e.stopPropagation();panel.classList.contains('open')?close():open();};
+  document.getElementById('ppX').onclick=function(e){e.stopPropagation();close();};
+  document.addEventListener('mousedown',function(e){if(panel.classList.contains('open')&&!dock.contains(e.target))close();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+
+  function nod(){if(reduce)return;face.classList.remove('nod');void face.offsetWidth;face.classList.add('nod');
+    setTimeout(function(){face.classList.remove('nod');},560);}
+
+  if(!reduce){
+    (function blink(){eyes.classList.add('blink');setTimeout(function(){eyes.classList.remove('blink');},130);
+      setTimeout(blink,2600+Math.random()*4200);})();
+    var mx=0,my=0,pend=false;
+    function look(){pend=false;var r=petBtn.getBoundingClientRect();var cx=r.left+r.width/2,cy=r.top+r.height/2;
+      var dx=mx-cx,dy=my-cy,d=Math.sqrt(dx*dx+dy*dy)||1,mag=Math.min(1.5,d/70);
+      pupils.setAttribute('transform','translate('+(dx/d*mag).toFixed(2)+' '+(dy/d*mag).toFixed(2)+')');}
+    window.addEventListener('mousemove',function(e){mx=e.clientX;my=e.clientY;if(!pend){pend=true;requestAnimationFrame(look);}},{passive:true});
+  }
 })();
 
 </script>
