@@ -1191,6 +1191,30 @@ body.booting #authScreen{visibility:hidden}
 .sk-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(430px,100%),1fr));gap:14px}
 .sk-card{height:150px;border-radius:14px}
 
+/* ============================================================= */
+/* ===== МОБИЛЬНАЯ ДОВОДКА ==================================== */
+/* ============================================================= */
+@media(max-width:900px){
+  /* тема-попап поднимается над петом, чтобы не перекрывать его */
+  .thpop{left:12px;bottom:84px}
+  /* подсказка пета раскрывается НАД ним (не обрезается по ширине) */
+  .pet-hint{left:0;right:auto;bottom:calc(100% + 12px);transform-origin:0 100%;max-width:min(240px,80vw)}
+  .pet-hint::before{left:18px;right:auto;bottom:-5px;top:auto;
+    border:none;border-right:1px solid var(--glass-brd);border-bottom:1px solid var(--glass-brd)}
+  /* меню-панель не шире экрана */
+  .pet-panel{width:min(300px,84vw)}
+  /* запас снизу, чтобы пет не перекрывал последний элемент списка */
+  main{padding-bottom:88px}
+  /* скелет: как реальный мобильный шелл — без бокового меню */
+  .sk-sb{display:none}
+  .sk-main{padding:16px 14px}
+  .sk-top{padding:0 14px}
+}
+/* на узких экранах чуть мягче размытие — экономим GPU на слабых телефонах */
+@media(max-width:560px){
+  :root{--glass-blur:12px}
+}
+
 </style>
 </head>
 <body>
@@ -4477,6 +4501,9 @@ function openTrSettings(){
   }
   if(window.MutationObserver&&src)
     new MutationObserver(update).observe(src,{childList:true,characterData:true,subtree:true,attributes:true});
+  var pnl0=document.getElementById('petPanel');
+  if(pnl0&&window.MutationObserver)
+    new MutationObserver(function(){if(pnl0.classList.contains('open'))hide();}).observe(pnl0,{attributes:true,attributeFilter:['class']});
   update();
   setTimeout(function(){var n=count();if(n>0&&!document.body.classList.contains('noauth')){last=0;showHint(n);last=n;}},2600);
 })();
