@@ -1,0 +1,18 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2E93FF"/>
+      <stop offset="1" stop-color="#0051D6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- mortarboard cap band (behind) -->
+  <path d="M196 262 L316 262 L316 306 C316 340 196 340 196 306 Z" fill="#ffffff" opacity="0.92"/>
+  <!-- mortarboard top diamond -->
+  <path d="M256 150 L412 214 L256 278 L100 214 Z" fill="#ffffff"/>
+  <!-- center button -->
+  <circle cx="256" cy="214" r="15" fill="#0051D6"/>
+  <!-- tassel -->
+  <path d="M402 214 L402 306" stroke="#FFC400" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <circle cx="402" cy="320" r="13" fill="#FFC400"/>
+</svg>
