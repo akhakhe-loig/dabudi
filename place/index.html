@@ -1050,29 +1050,45 @@ body:has(.lightbox) #petDock{opacity:0;pointer-events:none;transform:translateY(
 .pp-rc{font-size:10.5px;font-weight:700;color:var(--acc2);background:var(--acc-soft);border:none;border-radius:999px;padding:4px 11px;cursor:pointer;transition:transform .18s var(--spring),filter .15s}
 body[data-theme=dark] .pp-rc,body[data-theme=midnight] .pp-rc{color:var(--ink)}
 .pp-rc:hover{transform:translateY(-1px)}
-.pp-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.pp-nav{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:12px;border:1px solid transparent;background:var(--surface2);cursor:pointer;text-align:left;transition:background .14s,border-color .14s,transform .2s var(--spring)}
-.pp-nav .ico{color:var(--mut);flex:0 0 auto;transition:color .14s}
-.pp-nav .ico svg{width:16px;height:16px}
-.pp-nav .t{font-size:12.5px;font-weight:650;color:var(--ink)}
-.pp-nav:hover{background:var(--acc-soft);border-color:var(--acc-line);transform:translateY(-1px)}
-.pp-nav:hover .ico{color:var(--acc)}
-.pp-nav.on{background:var(--acc-soft);border-color:var(--acc-line)}
-.pp-nav.on .ico{color:var(--acc)}
-.pp-nav.on .t{color:var(--acc2)}
-body[data-theme=dark] .pp-nav.on .t,body[data-theme=midnight] .pp-nav.on .t{color:var(--ink)}
-.pp-quick{display:flex;gap:6px;margin-top:10px;padding-top:12px;border-top:1px solid var(--line)}
-.pp-q{position:relative;flex:1;height:38px;border-radius:11px;border:1px solid transparent;background:var(--surface2);color:var(--mut);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .14s,color .14s,transform .2s var(--spring)}
-.pp-q .ico svg{width:17px;height:17px}
-.pp-q:hover{background:var(--acc-soft);color:var(--acc);transform:translateY(-1px)}
-.pp-q::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%) translateY(3px);
-  background:#22263a;color:#fff;font-size:10px;font-weight:600;letter-spacing:.02em;padding:4px 8px;border-radius:7px;white-space:nowrap;
-  opacity:0;pointer-events:none;transition:opacity .15s,transform .15s}
-.pp-q:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+/* компактная квадратная сетка действий (легко расширяется — см. PET_MENU в JS) */
+.pp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.pet-tile{position:relative;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  padding:6px 4px;border-radius:14px;border:1px solid transparent;background:var(--surface2);cursor:pointer;
+  transition:background .14s,border-color .14s,transform .2s var(--spring),box-shadow .2s var(--ease)}
+.pet-tile .ico{color:var(--mut);transition:color .14s,transform .3s var(--spring)}
+.pet-tile .ico svg{width:19px;height:19px}
+.pet-tile .t{font-size:10px;font-weight:700;color:var(--ink2);text-align:center;line-height:1.15;letter-spacing:.01em}
+.pet-tile:hover{background:var(--acc-soft);border-color:var(--acc-line);transform:translateY(-2px);box-shadow:var(--shadow)}
+.pet-tile:hover .ico{color:var(--acc);transform:scale(1.12)}
+.pet-tile:hover .t{color:var(--ink)}
+.pet-tile:active{transform:scale(.94)}
+.pet-tile.on{background:var(--acc-soft);border-color:var(--acc-line)}
+.pet-tile.on .ico{color:var(--acc)}
+.pet-tile.on .t{color:var(--acc2)}
+body[data-theme=dark] .pet-tile.on .t,body[data-theme=midnight] .pet-tile.on .t{color:var(--ink)}
+.pet-tile.busy{pointer-events:none;opacity:.65}
+.pet-tile.busy .ico{animation:tileSpin .9s linear infinite}
+@keyframes tileSpin{to{transform:rotate(360deg)}}
 /* стаггер появления пунктов */
-.pet-panel .pp-grid>*,.pet-panel .pp-quick>*,.pet-panel .pp-recent>*{opacity:0}
-.pet-panel.open .pp-grid>*,.pet-panel.open .pp-quick>*,.pet-panel.open .pp-recent>*{animation:ppItem .4s var(--spring) forwards}
+.pet-panel .pp-grid>*,.pet-panel .pp-recent>*{opacity:0}
+.pet-panel.open .pp-grid>*,.pet-panel.open .pp-recent>*{animation:ppItem .4s var(--spring) forwards}
 @keyframes ppItem{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+/* ---- верхняя второстепенная навигация (иконки в углу) ---- */
+.qnav{display:flex;align-items:center;gap:2px;background:var(--surface2);border:1px solid var(--glass-brd);
+  border-radius:11px;padding:3px}
+.qnav-b{width:30px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;
+  border-radius:8px;color:var(--mut);cursor:pointer;position:relative;
+  transition:background .14s,color .14s,transform .2s var(--spring)}
+.qnav-b .ico svg{width:16px;height:16px}
+.qnav-b:hover{background:var(--wsurf);color:var(--acc);transform:translateY(-1px)}
+.qnav-b:active{transform:scale(.92)}
+.qnav-b:focus-visible{outline:none;box-shadow:0 0 0 3px var(--acc-line)}
+.qnav-b.active{background:var(--acc-soft);color:var(--acc)}
+.qnav-b::after{content:attr(data-tip);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-3px);
+  background:#22263a;color:#fff;font-size:10px;font-weight:600;padding:4px 8px;border-radius:7px;white-space:nowrap;z-index:5;
+  opacity:0;pointer-events:none;transition:opacity .15s,transform .15s}
+.qnav-b:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ============================================================= */
 /* ===== ЕДИНОЕ СТЕКЛО НА ВСПЛЫВАЮЩИХ СЛОЯХ + ПЕРЕХОДЫ ========= */
@@ -1115,7 +1131,7 @@ body[data-theme=dark] .pp-nav.on .t,body[data-theme=midnight] .pp-nav.on .t{colo
 /* единый фокус-ринг для клавиатурной навигации */
 .chk:focus-visible,.al-chk:focus-visible,.lnk:focus-visible,.chip:focus-visible,
 .sbtn:focus-visible,.fchip:focus-visible,.mchip:focus-visible,.qbt:focus-visible,
-.thc:focus-visible,.pp-nav:focus-visible,.pp-q:focus-visible{outline:none;box-shadow:0 0 0 3px var(--acc-line)}
+.thc:focus-visible,.pet-tile:focus-visible{outline:none;box-shadow:0 0 0 3px var(--acc-line)}
 /* приятное нажатие и плавная «заливка» чекбоксов */
 .chk,.al-chk{transition:background .18s var(--ease),border-color .18s var(--ease),transform .22s var(--spring)}
 .chk:active,.al-chk:active{transform:scale(.85)}
@@ -1146,9 +1162,10 @@ button.chip:active,.fchip:active,.lnk:active,.mchip:active{transform:scale(.95)}
   box-shadow:0 0 0 2px var(--bg),0 2px 8px rgba(229,83,75,.5)}
 .pet-badge.on{display:flex;animation:petBadgePop .42s var(--spring)}
 @keyframes petBadgePop{from{transform:scale(0)}60%{transform:scale(1.18)}to{transform:scale(1)}}
-.pp-nav{position:relative}
-.pp-navbadge{margin-left:auto;min-width:17px;height:17px;padding:0 5px;border-radius:9px;background:var(--red);
-  color:#fff;font-size:9.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.pp-navbadge{position:absolute;top:5px;right:5px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--red);
+  color:#fff;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 2px var(--surface2)}
+.pet-tile:hover .pp-navbadge{box-shadow:none}
 .pet-hint,.pet-say{position:absolute;left:calc(100% + 14px);bottom:6px;width:max-content;max-width:230px;
   background:var(--glass-bg);-webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5);
   border:1px solid var(--glass-brd);border-radius:14px;box-shadow:var(--shadow-pop);padding:10px 13px;
@@ -1276,6 +1293,14 @@ body.booting #authScreen{visibility:hidden}
     <div class="mlabel" id="mLabel"></div>
     <button class="btn sq" id="mNext" title="Следующий месяц"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg></span></button>
   </div>
+  <!-- Второстепенная навигация: быстрый доступ к основным разделам.
+       class="tab" + data-view — приложение само вешает переход и отметку
+       активного раздела (см. querySelectorAll('.tab') и renderApp). -->
+  <nav class="qnav" id="qnav" aria-label="Быстрые разделы">
+    <button class="tab qnav-b" data-view="projects" data-tip="Проекты" aria-label="Проекты"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></span></button>
+    <button class="tab qnav-b" data-view="ideas" data-tip="Идеи" aria-label="Идеи"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.6 1 1.4 1 2.5h6c0-1.1.3-1.9 1-2.5A6 6 0 0 0 12 3z"/></svg></span></button>
+    <button class="tab qnav-b" data-view="calendar" data-tip="Календарь" aria-label="Календарь"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span></button>
+  </nav>
   <span id="saveDot" class="savedot">Сохранено</span>
   <button class="btn ghost" id="btnExport" title="Экспорт: скачать резервную копию своих данных"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10m0 0l-4-4m4 4l4-4M5 19h14"/></svg></span></button>
   <button class="btn ghost" id="btnImport" title="Импорт: восстановить данные из резервной копии"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10m0 0l-4 4m4-4l4 4M5 4h14"/></svg></span></button>
@@ -4382,25 +4407,53 @@ function openTrSettings(){
   var reduce=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches);
   var VLBL={projects:'Проекты',ideas:'Идеи',calendar:'Календарь',trends:'Аналитика',digest:'Дайджест',alert:'Alert'};
   function ic(inner){return '<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg></span>';}
-  var NAV=[
-    {v:'projects',t:'Проекты',  i:'<path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>'},
-    {v:'ideas',   t:'Идеи',     i:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.6 1 1.4 1 2.5h6c0-1.1.3-1.9 1-2.5A6 6 0 0 0 12 3z"/>'},
-    {v:'calendar',t:'Календарь',i:'<rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'},
-    {v:'trends',  t:'Аналитика',i:'<path d="M3 17l6-6 4 4 7-8M14 7h6v6"/>'},
-    {v:'digest',  t:'Дайджест', i:'<path d="M3 10.5l14-6v14l-14-6v-2zM7 14.5v3.5a2 2 0 0 0 4 0v-2M17 8.5a4 4 0 0 1 0 6"/>'},
-    {v:'alert',   t:'Alert',    i:'<path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9zM10.3 20a2 2 0 0 0 3.4 0"/>'}
-  ];
   function clickId(id){var b=document.getElementById(id);if(b)b.click();}
-  function quickNew(){goView('projects');setTimeout(function(){
-    var bs=document.querySelectorAll('#view .toolbar .btn');
-    for(var i=0;i<bs.length;i++){if(/Создать проект/i.test(bs[i].textContent||'')){bs[i].click();return;}}
-  },40);}
-  var QUICK=[
-    {t:'Поиск',i:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',a:function(){var q=document.getElementById('q');if(q){try{q.focus();q.select();}catch(e){}}}},
-    {t:'Создать проект',i:'<path d="M12 5v14M5 12h14"/>',a:quickNew},
-    {t:'Оформление',i:'<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-.9 2-2 0-1.4-1-1.7-1-3 0-1.2 1-2 2.3-2H17a4 4 0 0 0 4-4c0-4-4.5-7-9-7z"/><circle cx="7.5" cy="11" r=".6"/><circle cx="10" cy="7.5" r=".6"/><circle cx="14.5" cy="7.5" r=".6"/>',a:function(){clickId('btnTheme');}},
-    {t:'Экспорт',i:'<path d="M12 4v10m0 0l-4-4m4 4l4-4M5 19h14"/>',a:function(){clickId('btnExport');}},
-    {t:'Справка',i:'<circle cx="12" cy="12" r="9"/><path d="M9.4 9.5a2.6 2.6 0 1 1 3.6 2.4c-.8.4-1 .9-1 1.9M12 17h.01"/>',a:function(){clickId('btnHelp');}}
+
+  /* ---------------- ИНТЕГРАЦИЯ: Qtickets → Google Sheets ----------------
+     Логика из Colab-ноутбука живёт на сервере, приложение только запускает.
+     Включается ОДНОЙ строкой ниже — выберите свой вариант:
+       COLAB_ACTION — действие в api.php (рекомендуется: ключ остаётся на
+                      сервере, переиспользуется ваша авторизация; ровно так
+                      же, как уже сделан Wordstat). Напр. 'run_qtickets'.
+       COLAB_URL    — прямой URL веб-приложения Google Apps Script,
+                      если пойдёте этим путём (без своего Python-сервиса).
+     Подробности и готовый код — в place/INTEGRATIONS.md                  */
+  var COLAB_ACTION='';
+  var COLAB_URL='';
+  function runColab(tile){
+    if(!COLAB_ACTION&&!COLAB_URL){
+      toast('Google Colab ещё не подключён — как включить, описано в INTEGRATIONS.md',false,5000);return;
+    }
+    if(tile)tile.classList.add('busy');
+    toast('Запускаю выгрузку Qtickets → Google Sheets…');
+    var req=COLAB_ACTION
+      ? srvCall(COLAB_ACTION,{})
+      : fetch(COLAB_URL,{method:'POST'}).then(function(r){return r.json()['catch'](function(){return{ok:1}})});
+    req.then(function(r){
+      if(tile)tile.classList.remove('busy');
+      toast((r&&r.message)||'Готово ✓ Таблица обновлена');
+    },function(e){
+      if(tile)tile.classList.remove('busy');
+      toast('Не удалось запустить: '+((e&&e.message)||'нет связи'),true,5000);
+    });
+  }
+
+  /* ======================= МЕНЮ ПЕТА =======================
+     Чтобы добавить пункт — просто допишите объект в массив.
+     Поля: label — подпись; icon — содержимое SVG 24×24;
+           view  — перейти в раздел приложения (необязательно);
+           run   — своя функция, получает саму плитку (необязательно);
+           badge — 'alert', чтобы показывать счётчик (необязательно).
+     Больше ничего править не нужно: сетка, анимация, подсветка
+     активного раздела и закрытие меню подхватятся сами.
+     ========================================================= */
+  var PET_MENU=[
+    {view:'trends',label:'Отслежиратор',icon:'<path d="M3 17l6-6 4 4 7-8M14 7h6v6"/>'},
+    {view:'digest',label:'Дайджест',icon:'<path d="M3 10.5l14-6v14l-14-6v-2zM7 14.5v3.5a2 2 0 0 0 4 0v-2M17 8.5a4 4 0 0 1 0 6"/>'},
+    {view:'alert',label:'Alert',badge:'alert',icon:'<path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9zM10.3 20a2 2 0 0 0 3.4 0"/>'},
+    {run:runColab,label:'Colab',icon:'<rect x="4" y="8" width="16" height="12" rx="4"/><path d="M12 8V4.5M8.5 14h.01M15.5 14h.01M2.5 13.5v3M21.5 13.5v3"/><circle cx="12" cy="3.4" r="1.3"/>'},
+    {run:function(){clickId('btnTheme');},label:'Оформление',icon:'<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-.9 2-2 0-1.4-1-1.7-1-3 0-1.2 1-2 2.3-2H17a4 4 0 0 0 4-4c0-4-4.5-7-9-7z"/><circle cx="7.5" cy="11" r=".6"/><circle cx="10" cy="7.5" r=".6"/><circle cx="14.5" cy="7.5" r=".6"/>'},
+    {run:function(){var q=document.getElementById('q');if(q){try{q.focus();q.select();}catch(e){}}},label:'Поиск',icon:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>'}
   ];
 
   var dock=document.createElement('div');dock.id='petDock';
@@ -4420,14 +4473,13 @@ function openTrSettings(){
     +'<div class="pet-panel" id="petPanel">'
     +'<div class="pp-head"><span class="pp-emblem"></span><div><div class="pp-hi" id="ppHi">Привет</div><div class="pp-sub">Куда идём?</div></div><button class="pp-x" id="ppX" aria-label="Закрыть">×</button></div>'
     +'<div class="pp-lbl" id="ppRecentLbl">Недавнее</div><div class="pp-recent" id="ppRecent"></div>'
-    +'<div class="pp-lbl">Разделы</div><div class="pp-grid" id="ppNav"></div>'
-    +'<div class="pp-quick" id="ppQuick"></div></div>';
+    +'<div class="pp-grid" id="ppNav"></div></div>';
   document.body.appendChild(dock);
 
   var petBtn=document.getElementById('petBtn'),panel=document.getElementById('petPanel'),
       face=petBtn.querySelector('.pet-face'),eyes=document.getElementById('petEyes'),
       pupils=document.getElementById('petPupils'),navWrap=document.getElementById('ppNav'),
-      quickWrap=document.getElementById('ppQuick'),recWrap=document.getElementById('ppRecent'),
+      recWrap=document.getElementById('ppRecent'),
       recLbl=document.getElementById('ppRecentLbl');
 
   function curView(){try{return (state&&state.ui&&state.ui.view)||'projects';}catch(e){return 'projects';}}
@@ -4439,18 +4491,25 @@ function openTrSettings(){
     if(tab)tab.click();else{try{state.ui.view=v;save();renderApp();}catch(e){}}
     pushRecent(v);}
 
-  NAV.forEach(function(n,idx){var b=document.createElement('button');b.className='pp-nav';b.dataset.view=n.v;
-    b.style.animationDelay=(idx*0.03)+'s';b.innerHTML=ic(n.i)+'<span class="t">'+n.t+'</span>';
-    b.onclick=function(){goView(n.v);nod();close();};navWrap.appendChild(b);});
-  QUICK.forEach(function(q,idx){var b=document.createElement('button');b.className='pp-q';b.setAttribute('data-tip',q.t);
-    b.setAttribute('aria-label',q.t);b.style.animationDelay=(0.1+idx*0.03)+'s';b.innerHTML=ic(q.i);
-    b.onclick=function(){close();setTimeout(q.a,60);};quickWrap.appendChild(b);});
+  PET_MENU.forEach(function(m,idx){
+    var b=document.createElement('button');b.className='pet-tile';
+    if(m.view)b.dataset.view=m.view;
+    if(m.badge)b.dataset.badge=m.badge;
+    b.title=m.label;b.setAttribute('aria-label',m.label);
+    b.style.animationDelay=(idx*0.03)+'s';
+    b.innerHTML=ic(m.icon)+'<span class="t">'+m.label+'</span>';
+    b.onclick=function(){
+      if(m.view){goView(m.view);nod();close();}
+      else if(m.run){nod();m.run(b);}       /* меню не закрываем — виден прогресс */
+    };
+    navWrap.appendChild(b);
+  });
 
   function renderRecent(){var cv=curView();var items=recent.filter(function(v){return v!==cv&&VLBL[v];});
     recWrap.innerHTML='';var show=items.length>0;recWrap.style.display=show?'':'none';recLbl.style.display=show?'':'none';
     items.slice(0,4).forEach(function(v,idx){var b=document.createElement('button');b.className='pp-rc';b.textContent=VLBL[v];
       b.style.animationDelay=(idx*0.03)+'s';b.onclick=function(){goView(v);nod();close();};recWrap.appendChild(b);});}
-  function markActive(){var cv=curView();var bs=navWrap.querySelectorAll('.pp-nav');
+  function markActive(){var cv=curView();var bs=navWrap.querySelectorAll('.pet-tile');
     for(var i=0;i<bs.length;i++)bs[i].classList.toggle('on',bs[i].dataset.view===cv);}
   function greet(){var h=new Date().getHours();return h<6?'Доброй ночи':h<12?'Доброе утро':h<18?'Добрый день':'Добрый вечер';}
 
@@ -4505,7 +4564,7 @@ function openTrSettings(){
   function update(){
     var n=count();
     badge.textContent=n>99?'99+':String(n);badge.classList.toggle('on',n>0);
-    var na=dock.querySelector('.pp-nav[data-view="alert"]');
+    var na=dock.querySelector('.pet-tile[data-badge="alert"]');
     if(na){var nb=na.querySelector('.pp-navbadge');
       if(n>0){if(!nb){nb=document.createElement('span');nb.className='pp-navbadge';na.appendChild(nb);}nb.textContent=n;}
       else if(nb){nb.parentNode.removeChild(nb);}}
