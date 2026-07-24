@@ -4410,31 +4410,104 @@ function openTrSettings(){
   function clickId(id){var b=document.getElementById(id);if(b)b.click();}
 
   /* ---------------- ИНТЕГРАЦИЯ: Qtickets → Google Sheets ----------------
-     Логика из Colab-ноутбука живёт на сервере, приложение только запускает.
-     Включается ОДНОЙ строкой ниже — выберите свой вариант:
-       COLAB_ACTION — действие в api.php (рекомендуется: ключ остаётся на
-                      сервере, переиспользуется ваша авторизация; ровно так
-                      же, как уже сделан Wordstat). Напр. 'run_qtickets'.
-       COLAB_URL    — прямой URL веб-приложения Google Apps Script,
-                      если пойдёте этим путём (без своего Python-сервиса).
-     Подробности и готовый код — в place/INTEGRATIONS.md                  */
-  var COLAB_ACTION='';
-  var COLAB_URL='';
-  function runColab(tile){
-    if(!COLAB_ACTION&&!COLAB_URL){
-      toast('Google Colab ещё не подключён — как включить, описано в INTEGRATIONS.md',false,5000);return;
-    }
+     Логика расчёта из Colab-ноутбука живёт на сервере (integrations/qtickets),
+     приложение только запускает её и показывает отчёт. Выгрузка читает все
+     заказы и идёт минутами, поэтому работаем асинхронно: запуск отдаёт job_id,
+     дальше опрашиваем статус и рисуем прогресс.
+     Настройка — QT_URL и QT_KEY в config.php (см. INTEGRATIONS.md).      */
+  var qtJob=null,qtPoll=null;
+  function runQtickets(tile){
+    if(qtJob){toast('Выгрузка уже идёт — дождитесь отчёта');return;}
     if(tile)tile.classList.add('busy');
     toast('Запускаю выгрузку Qtickets → Google Sheets…');
-    var req=COLAB_ACTION
-      ? srvCall(COLAB_ACTION,{})
-      : fetch(COLAB_URL,{method:'POST'}).then(function(r){return r.json()['catch'](function(){return{ok:1}})});
-    req.then(function(r){
-      if(tile)tile.classList.remove('busy');
-      toast((r&&r.message)||'Готово ✓ Таблица обновлена');
+    srvCall('qtickets_run',{apply:true}).then(function(r){
+      qtJob=r&&r.job_id;
+      if(!qtJob){qtDone(tile);toast('Сервис не вернул номер задачи',true);return;}
+      if(r.already_running)toast('Подключаюсь к уже запущенной выгрузке…');
+      qtWatch(tile);
     },function(e){
-      if(tile)tile.classList.remove('busy');
-      toast('Не удалось запустить: '+((e&&e.message)||'нет связи'),true,5000);
+      qtDone(tile);
+      toast('Не удалось запустить: '+((e&&e.message)||'нет связи'),true,6000);
+    });
+  }
+  function qtDone(tile){qtJob=null;clearTimeout(qtPoll);if(tile)tile.classList.remove('busy');}
+  function qtWatch(tile){
+    qtPoll=setTimeout(function(){
+      srvCall('qtickets_status',{job_id:qtJob}).then(function(s){
+        if(!s){qtDone(tile);return;}
+        if(s.state==='running'){
+          toast((s.stage||'Работаю…')+(s.pct?(' · '+s.pct+'%'):''),false,4000);
+          qtWatch(tile);return;
+        }
+        qtDone(tile);
+        if(s.state==='error'){toast('Выгрузка не удалась: '+(s.error||'ошибка'),true,7000);return;}
+        qtReport(s.report||{});
+      },function(e){
+        qtDone(tile);
+        toast('Потерял связь с выгрузкой: '+((e&&e.message)||''),true,6000);
+      });
+    },3000);
+  }
+  /* Отчёт: если проблем нет — «всё сработано», иначе список мест,
+     которые надо посмотреть глазами. */
+  function qtReport(rep){
+    close();                                   /* убираем меню — отчёт выходит на первый план */
+    var probs=(rep&&rep.problems)||[],okAll=probs.length===0;
+    toast(okAll?('Готово ✓ Заполнено ячеек: '+(rep.written||0))
+               :('Готово, но есть замечания: '+probs.length),!okAll,5000);
+    openModal(function(m){
+      var h=el('div','mhead');
+      h.appendChild(el('div','dtitle',okAll?'Выгрузка прошла успешно':'Выгрузка завершена — есть что проверить'));
+      m.appendChild(h);
+
+      var st=el('div','statgrid');
+      function card(lbl,val,tone){
+        var c=el('div','statcard'),row=el('div','strow');
+        row.appendChild(el('span','stico t-'+(tone||'acc')));
+        row.appendChild(el('span','stlbl',lbl));
+        c.appendChild(row);c.appendChild(el('div','stval',String(val)));return c;
+      }
+      st.appendChild(card('Заполнено ячеек',rep.written||0,'ok'));
+      st.appendChild(card('Листов обработано',(rep.sheets||[]).length,'acc'));
+      st.appendChild(card('Замечаний',probs.length,probs.length?'warn':'ok'));
+      st.appendChild(card('Заказов прочитано',rep.orders||0,'mut'));
+      m.appendChild(st);
+
+      var sec=el('div','sec');
+      if(okAll){
+        var okBox=el('div','al-empty','Всё сработано: расхождений нет, пустые ячейки Z/AB заполнены. '
+          +'Заполненные ранее значения не трогали.');
+        sec.appendChild(okBox);
+      }else{
+        sec.appendChild(el('div','sect','ТРЕБУЕТ ВНИМАНИЯ'));
+        probs.forEach(function(p){
+          var row=el('div','al-row'+(p.type==='mismatch'?'':' soft'));
+          var main=el('div','al-main');
+          main.appendChild(el('div','al-txt',p.text||''));
+          main.appendChild(el('div','al-meta',p.type==='mismatch'
+            ?'расхождение с таблицей — значение оставлено как было'
+            :'лист пропущен: не нашёл ровно один показ QTickets'));
+          row.appendChild(main);sec.appendChild(row);
+        });
+      }
+      m.appendChild(sec);
+
+      if(rep.sheets&&rep.sheets.length){
+        var s2=el('div','sec');
+        s2.appendChild(el('div','sect','ЛИСТЫ'));
+        rep.sheets.forEach(function(s){
+          var r=el('div','mrow');
+          r.appendChild(el('span','lbl',s.tab));
+          r.appendChild(el('span','mval',(s.written||0)+' из '+(s.to_write||0)+' ячеек'));
+          s2.appendChild(r);
+        });
+        m.appendChild(s2);
+      }
+
+      var f=el('div','mfoot'),ok=el('button','btn acc','ПОНЯТНО');
+      ok.onclick=closeModal;f.appendChild(ok);
+      if(rep.sheet_title)f.appendChild(el('span','autosave',rep.sheet_title));
+      m.appendChild(f);
     });
   }
 
@@ -4451,7 +4524,7 @@ function openTrSettings(){
     {view:'trends',label:'Отслежиратор',icon:'<path d="M3 17l6-6 4 4 7-8M14 7h6v6"/>'},
     {view:'digest',label:'Дайджест',icon:'<path d="M3 10.5l14-6v14l-14-6v-2zM7 14.5v3.5a2 2 0 0 0 4 0v-2M17 8.5a4 4 0 0 1 0 6"/>'},
     {view:'alert',label:'Alert',badge:'alert',icon:'<path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9zM10.3 20a2 2 0 0 0 3.4 0"/>'},
-    {run:runColab,label:'Colab',icon:'<rect x="4" y="8" width="16" height="12" rx="4"/><path d="M12 8V4.5M8.5 14h.01M15.5 14h.01M2.5 13.5v3M21.5 13.5v3"/><circle cx="12" cy="3.4" r="1.3"/>'},
+    {run:runQtickets,label:'Qtickets',icon:'<rect x="4" y="8" width="16" height="12" rx="4"/><path d="M12 8V4.5M8.5 14h.01M15.5 14h.01M2.5 13.5v3M21.5 13.5v3"/><circle cx="12" cy="3.4" r="1.3"/>'},
     {run:function(){clickId('btnTheme');},label:'Оформление',icon:'<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-.9 2-2 0-1.4-1-1.7-1-3 0-1.2 1-2 2.3-2H17a4 4 0 0 0 4-4c0-4-4.5-7-9-7z"/><circle cx="7.5" cy="11" r=".6"/><circle cx="10" cy="7.5" r=".6"/><circle cx="14.5" cy="7.5" r=".6"/>'},
     {run:function(){var q=document.getElementById('q');if(q){try{q.focus();q.select();}catch(e){}}},label:'Поиск',icon:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>'}
   ];

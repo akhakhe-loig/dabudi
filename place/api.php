@@ -467,6 +467,42 @@ if (defined('PLACE_CRON')) {
   if (PLACE_CRON === 'backup')  pj(do_backup());
 }
 
+/* ---------- Интеграция QTickets → Google Sheets ----------
+   Запрос к своему сервису выгрузки. Ключ и адрес лежат в config.php и
+   наружу не отдаются: браузер обращается только к api.php. */
+function qt_call($path, $post = null, $timeout = 30) {
+  if (!defined('QT_URL') || QT_URL === '') {
+    perr('Интеграция не настроена: задайте QT_URL в config.php (см. INTEGRATIONS.md).', 400);
+  }
+  $url = rtrim(QT_URL, '/') . $path;
+  $ch = curl_init($url);
+  $opts = array(
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_TIMEOUT        => $timeout,
+    CURLOPT_HTTPHEADER     => array(
+      'Content-Type: application/json',
+      'X-Run-Key: ' . (defined('QT_KEY') ? QT_KEY : ''),
+    ),
+  );
+  if ($post !== null) {
+    $opts[CURLOPT_POST] = true;
+    $opts[CURLOPT_POSTFIELDS] = json_encode($post === array() ? new stdClass() : $post);
+  }
+  curl_setopt_array($ch, $opts);
+  $body = curl_exec($ch);
+  $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  $err  = curl_error($ch);
+  curl_close($ch);
+  if ($body === false || $code === 0) perr('Сервис выгрузки недоступен: ' . $err, 502);
+  $j = json_decode($body, true);
+  if ($code >= 400) {
+    $msg = (is_array($j) && isset($j['detail'])) ? $j['detail'] : ('HTTP ' . $code);
+    perr('Сервис выгрузки: ' . $msg, 502);
+  }
+  if (!is_array($j)) perr('Сервис выгрузки вернул некорректный ответ.', 502);
+  return $j;
+}
+
 /* HTTP */
 $action = isset($_GET['action']) ? (string)$_GET['action'] : '';
 $in = array();
@@ -634,6 +670,19 @@ switch ($action) {
     foreach ($sh as &$d2) { $d2['json'] = json_decode($d2['json'], true); }
     unset($d2);
     pj(array('ok' => 1, 'exported' => date('c'), 'users' => $users, 'userdata' => $data, 'shared' => $sh));
+  }
+
+  case 'qtickets_run': {
+    require_auth($in);
+    $apply = !isset($in['apply']) || $in['apply'] ? true : false;
+    pj(qt_call('/run', array('apply' => $apply), 30));
+  }
+
+  case 'qtickets_status': {
+    require_auth($in);
+    $jid = isset($in['job_id']) ? (string)$in['job_id'] : '';
+    if ($jid === '') perr('Не передан job_id', 400);
+    pj(qt_call('/status?job_id=' . urlencode($jid), null, 30));
   }
 
   default:
