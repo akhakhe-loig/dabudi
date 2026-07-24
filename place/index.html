@@ -1149,17 +1149,29 @@ button.chip:active,.fchip:active,.lnk:active,.mchip:active{transform:scale(.95)}
 .pp-nav{position:relative}
 .pp-navbadge{margin-left:auto;min-width:17px;height:17px;padding:0 5px;border-radius:9px;background:var(--red);
   color:#fff;font-size:9.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
-.pet-hint{position:absolute;left:calc(100% + 14px);bottom:6px;width:max-content;max-width:230px;
+.pet-hint,.pet-say{position:absolute;left:calc(100% + 14px);bottom:6px;width:max-content;max-width:230px;
   background:var(--glass-bg);-webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5);
   border:1px solid var(--glass-brd);border-radius:14px;box-shadow:var(--shadow-pop);padding:10px 13px;
   font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;line-height:1.4;
   opacity:0;transform:translateX(-10px) scale(.95);transform-origin:0 80%;pointer-events:none;
   transition:opacity .3s var(--ease),transform .42s var(--spring)}
-.pet-hint.on{opacity:1;transform:none;pointer-events:auto}
-.pet-hint::before{content:'';position:absolute;left:-5px;bottom:16px;width:11px;height:11px;transform:rotate(45deg);
+.pet-hint.on,.pet-say.on{opacity:1;transform:none;pointer-events:auto}
+.pet-hint::before,.pet-say::before{content:'';position:absolute;left:-5px;bottom:16px;width:11px;height:11px;transform:rotate(45deg);
   background:var(--glass-bg);border-left:1px solid var(--glass-brd);border-bottom:1px solid var(--glass-brd)}
 .pet-hint b{color:var(--red-ink);font-weight:800}
 body[data-theme=dark] .pet-hint b,body[data-theme=midnight] .pet-hint b{color:#ff8a80}
+/* реплика пета — чуть мягче по тону, чем предупреждение */
+.pet-say{font-weight:600;color:var(--ink2);border-radius:16px 16px 16px 6px}
+
+/* --- живые микродвижения пета --- */
+.pet-face.tilt{animation:petTilt 1.05s var(--ease)}
+@keyframes petTilt{0%{transform:rotate(0)}30%{transform:rotate(-7deg)}62%{transform:rotate(4deg)}100%{transform:rotate(0)}}
+.pet-face.hop{animation:petHop .62s var(--spring)}
+@keyframes petHop{0%{transform:translateY(0)}30%{transform:translateY(-7px) scaleY(1.05)}58%{transform:translateY(0) scaleY(.95)}100%{transform:translateY(0)}}
+.pet-face.wiggle{animation:petWiggle .62s ease-in-out}
+@keyframes petWiggle{0%,100%{transform:translateX(0) rotate(0)}22%{transform:translateX(-3px) rotate(-3.5deg)}52%{transform:translateX(3px) rotate(3.5deg)}80%{transform:translateX(-2px) rotate(-1.5deg)}}
+.pet-face.perk{animation:petPerk .8s var(--spring)}
+@keyframes petPerk{0%{transform:scale(1)}34%{transform:scale(1.07) translateY(-3px)}100%{transform:scale(1)}}
 
 /* ============================================================= */
 /* ===== СКЕЛЕТ ЗАГРУЗКИ (первичная загрузка сессии) =========== */
@@ -1197,9 +1209,9 @@ body.booting #authScreen{visibility:hidden}
 @media(max-width:900px){
   /* тема-попап поднимается над петом, чтобы не перекрывать его */
   .thpop{left:12px;bottom:84px}
-  /* подсказка пета раскрывается НАД ним (не обрезается по ширине) */
-  .pet-hint{left:0;right:auto;bottom:calc(100% + 12px);transform-origin:0 100%;max-width:min(240px,80vw)}
-  .pet-hint::before{left:18px;right:auto;bottom:-5px;top:auto;
+  /* облачка пета раскрываются НАД ним (не обрезаются по ширине) */
+  .pet-hint,.pet-say{left:0;right:auto;bottom:calc(100% + 12px);transform-origin:0 100%;max-width:min(240px,80vw)}
+  .pet-hint::before,.pet-say::before{left:18px;right:auto;bottom:-5px;top:auto;
     border:none;border-right:1px solid var(--glass-brd);border-bottom:1px solid var(--glass-brd)}
   /* меню-панель не шире экрана */
   .pet-panel{width:min(300px,84vw)}
@@ -4484,6 +4496,7 @@ function openTrSettings(){
     if(Date.now()-dismissed<60000)return;
     var pnl=document.getElementById('petPanel');if(pnl&&pnl.classList.contains('open'))return;
     if(document.body.classList.contains('noauth'))return;
+    var sb=dock.querySelector('.pet-say');if(sb)sb.classList.remove('on'); /* важное важнее болтовни */
     hint.innerHTML='';var s=document.createElement('span');
     s.innerHTML='🚨 <b>'+n+'</b> '+word(n)+' внимания';hint.appendChild(s);
     hint.onclick=function(){hide();goAlert();};
@@ -4506,6 +4519,81 @@ function openTrSettings(){
     new MutationObserver(function(){if(pnl0.classList.contains('open'))hide();}).observe(pnl0,{attributes:true,attributeFilter:['class']});
   update();
   setTimeout(function(){var n=count();if(n>0&&!document.body.classList.contains('noauth')){last=0;showHint(n);last=n;}},2600);
+})();
+
+/* ============================================================= */
+/* ===== Характер пета: микродвижения и добрые фразы =========== */
+/*  Раз в ~20 сек пет говорит короткую тёплую фразу и оживает    */
+/*  небольшим движением. Молчит, когда может помешать: открыто   */
+/*  меню/модалка, идёт ввод текста, висит важное уведомление,    */
+/*  вкладка свёрнута или включён prefers-reduced-motion.         */
+/* ============================================================= */
+(function(){
+  var dock=document.getElementById('petDock'),petBtn=document.getElementById('petBtn');
+  if(!dock||!petBtn)return;
+  var face=petBtn.querySelector('.pet-face'),hint=dock.querySelector('.pet-hint'),
+      panel=document.getElementById('petPanel');
+  var reduce=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches);
+  var say=document.createElement('div');say.className='pet-say';dock.appendChild(say);
+
+  var GENERAL=[
+    'У тебя всё получится 💪','Ты сегодня отлично справляешься','Маленький шаг — тоже прогресс',
+    'Не забывай про паузы ☕','Я рядом, если что','Хороший день для новой идеи ✨',
+    'Ты молодец, правда','Один шаг за раз — и всё сложится','Сделано лучше, чем идеально',
+    'Спину ровнее, плечи вниз 🙂','Глаза устали? Посмотри вдаль 20 секунд','Верю в тебя!',
+    'Дыши глубже — всё под контролем','Ты уже сделал больше, чем кажется'
+  ];
+  var MORNING=['Доброе утро! Начнём с малого ☀️','Утро — лучшее время для сложной задачи','С добрым утром! Кофе уже? ☕'];
+  var EVENING=['Вечер — время подвести итоги 🌇','Ты много успел сегодня','Скоро отдых — ты заслужил'];
+  var NIGHT=['Поздно уже… не засиживайся 🌙','Отдых — тоже работа','Ночью идеи приходят, но сон важнее 💤'];
+  function pool(){var h=new Date().getHours();
+    if(h<5||h>=23)return NIGHT.concat(GENERAL);
+    if(h<11)return MORNING.concat(GENERAL);
+    if(h>=18)return EVENING.concat(GENERAL);
+    return GENERAL;}
+  var lastMsg='';
+  function pick(){var p=pool(),m=p[0];
+    for(var i=0;i<6;i++){m=p[Math.floor(Math.random()*p.length)];if(m!==lastMsg)break;}
+    lastMsg=m;return m;}
+
+  function busy(){
+    if(document.hidden)return true;
+    if(document.body.classList.contains('noauth'))return true;
+    if(panel&&panel.classList.contains('open'))return true;
+    if(hint&&hint.classList.contains('on'))return true;
+    var ov=document.getElementById('overlay');if(ov&&!ov.classList.contains('hidden'))return true;
+    if(document.querySelector('.lightbox'))return true;
+    var ae=document.activeElement;                       /* не отвлекаем во время ввода */
+    if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return true;
+    return false;
+  }
+  var sayT=null;
+  function hush(){say.classList.remove('on');clearTimeout(sayT);}
+  function speak(msg){
+    if(busy())return;
+    say.textContent=msg||pick();say.classList.add('on');move('perk');
+    clearTimeout(sayT);sayT=setTimeout(hush,5600);
+  }
+  say.onclick=function(e){e.stopPropagation();hush();};
+
+  var MOVES=['tilt','hop','wiggle'],moveT=null;
+  function move(kind){
+    if(reduce)return;
+    var k=kind||MOVES[Math.floor(Math.random()*MOVES.length)];
+    face.classList.remove('tilt','hop','wiggle','perk');void face.offsetWidth;
+    face.classList.add(k);clearTimeout(moveT);
+    moveT=setTimeout(function(){face.classList.remove(k);},1150);
+  }
+
+  (function talkLoop(){setTimeout(function(){speak();talkLoop();},20000+Math.random()*7000);})();
+  if(!reduce)(function idleLoop(){setTimeout(function(){
+    if(!busy())move();idleLoop();},9000+Math.random()*9000);})();
+
+  document.addEventListener('visibilitychange',function(){if(document.hidden)hush();});
+  if(panel&&window.MutationObserver)
+    new MutationObserver(function(){if(panel.classList.contains('open'))hush();})
+      .observe(panel,{attributes:true,attributeFilter:['class']});
+  setTimeout(function(){speak('Привет! Я рядом, если что 👋');},4200);
 })();
 
 /* ============================================================= */
