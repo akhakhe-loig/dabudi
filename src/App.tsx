@@ -277,7 +277,8 @@ export default function App() {
     root.style.setProperty("--accent", a.accent);
     root.style.setProperty("--accent-dark", a.accentDark);
     root.style.setProperty("--radius", getRadiusValue(theme.radius));
-  }, [theme.accent, theme.radius]);
+    root.classList.toggle("dark", theme.dark);
+  }, [theme.accent, theme.radius, theme.dark]);
 
   // Sync state triggers
   const saveState = (key: string, data: any) => {
@@ -313,11 +314,15 @@ export default function App() {
   const handleAddLesson = (newL: Omit<Lesson, "id">) => {
     const lesson: Lesson = {
       ...newL,
-      id: Date.now().toString()
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     };
-    const updated = [...lessons, lesson];
-    setLessons(updated);
-    saveState("tutor_crm_lessons", updated);
+    // Функциональное обновление — безопасно при добавлении нескольких
+    // занятий подряд (повторяющиеся занятия), без потери и дублей id.
+    setLessons(prev => {
+      const updated = [...prev, lesson];
+      saveState("tutor_crm_lessons", updated);
+      return updated;
+    });
   };
 
   const handleAddPayment = (newP: Omit<Payment, "id">) => {

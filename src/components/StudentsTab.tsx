@@ -114,7 +114,10 @@ export default function StudentsTab({
   };
 
   // Colors array for custom iOS picker
-  const iosColors = ["#007AFF", "#34C759", "#FF9500", "#FF2D55", "#AF52DE", "#5AC8FA", "#FFCC00", "#8E8E93"];
+  const iosColors = [
+    "#007AFF", "#5AC8FA", "#30C7C0", "#34C759", "#FFCC00", "#FF9500", "#FF3B30",
+    "#FF2D55", "#FF375F", "#AF52DE", "#BF5AF2", "#5E5CE6", "#A2845E", "#8E8E93"
+  ];
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative">
@@ -622,18 +625,39 @@ export default function StudentsTab({
 
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold tracking-wider text-neutral-400 uppercase">Цветовой тег</label>
-                  <div className="flex flex-wrap gap-1.5 pt-1 justify-between">
-                    {iosColors.slice(0, 4).map(c => (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {iosColors.map(c => (
                       <button
                         key={c}
                         type="button"
                         onClick={() => setNewStudentColor(c)}
-                        className={`w-5 h-5 rounded-full border-2 transition ${
-                          newStudentColor === c ? "scale-110 border-black dark:border-white" : "border-transparent"
+                        aria-label={`Цвет ${c}`}
+                        className={`w-7 h-7 rounded-full border-2 transition active:scale-90 ${
+                          newStudentColor.toLowerCase() === c.toLowerCase() ? "scale-110 border-black dark:border-white" : "border-transparent"
                         }`}
                         style={{ backgroundColor: c }}
                       />
                     ))}
+
+                    {/* Свой цвет из палитры (системный выбор цвета) */}
+                    <label
+                      className={`w-7 h-7 rounded-full border-2 cursor-pointer flex items-center justify-center relative overflow-hidden active:scale-90 transition ${
+                        iosColors.some(c => c.toLowerCase() === newStudentColor.toLowerCase())
+                          ? "border-transparent"
+                          : "scale-110 border-black dark:border-white"
+                      }`}
+                      style={{ background: "conic-gradient(from 0deg, #ff3b30, #ff9500, #ffcc00, #34c759, #5ac8fa, #007aff, #af52de, #ff2d55, #ff3b30)" }}
+                      title="Выбрать любой цвет"
+                    >
+                      <Plus size={13} className="text-white drop-shadow" strokeWidth={3} />
+                      <input
+                        type="color"
+                        value={newStudentColor}
+                        onChange={(e) => setNewStudentColor(e.target.value)}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        aria-label="Выбрать свой цвет"
+                      />
+                    </label>
                   </div>
                 </div>
               </div>

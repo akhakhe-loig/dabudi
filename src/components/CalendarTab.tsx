@@ -29,8 +29,13 @@ export default function CalendarTab({
   const [formTime, setFormTime] = useState("14:00");
   const [formDuration, setFormDuration] = useState("60");
   const [formHomework, setFormHomework] = useState("");
+  const [formRepeat, setFormRepeat] = useState<"none" | "weekly" | "biweekly">("none");
+  const [formRepeatCount, setFormRepeatCount] = useState("8");
 
+  // Подписи дней: getDay()-индексация (Вс=0) для меток дат,
+  // и понедельник-первый порядок для сетки месяца/недели.
   const daysOfWeek = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+  const weekDaysMon = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
   const monthsRu = [
     "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
     "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
@@ -104,24 +109,32 @@ export default function CalendarTab({
     e.preventDefault();
     if (!formStudentId) return;
 
-    const lessonDate = new Date(selectedDate);
     const [hours, minutes] = formTime.split(":").map(Number);
-    lessonDate.setHours(hours, minutes, 0, 0);
+    const intervalDays = formRepeat === "weekly" ? 7 : formRepeat === "biweekly" ? 14 : 0;
+    const count = formRepeat === "none" ? 1 : Math.max(1, Math.min(52, Number(formRepeatCount) || 1));
 
-    onAddLesson({
-      studentId: formStudentId,
-      dateTime: lessonDate.toISOString(),
-      durationMinutes: Number(formDuration),
-      topic: formTopic,
-      homework: formHomework,
-      isCompleted: false,
-      isCancelled: false,
-      isPaid: false
-    });
+    // Создаём одно или серию повторяющихся занятий (напр. каждую среду)
+    for (let i = 0; i < count; i++) {
+      const d = new Date(selectedDate);
+      d.setDate(d.getDate() + i * intervalDays);
+      d.setHours(hours, minutes, 0, 0);
+      onAddLesson({
+        studentId: formStudentId,
+        dateTime: d.toISOString(),
+        durationMinutes: Number(formDuration),
+        topic: formTopic,
+        homework: formHomework,
+        isCompleted: false,
+        isCancelled: false,
+        isPaid: false
+      });
+    }
 
     setFormStudentId("");
     setFormTopic("");
     setFormHomework("");
+    setFormRepeat("none");
+    setFormRepeatCount("8");
     setShowAddLessonModal(false);
   };
 
@@ -230,7 +243,8 @@ export default function CalendarTab({
               {Array.from({ length: 7 }).map((_, i) => {
                 const date = new Date(selectedDate);
                 const currentDay = date.getDay();
-                const offset = i - currentDay;
+                const mondayIndex = (currentDay + 6) % 7; // Пн=0 … Вс=6
+                const offset = i - mondayIndex;
                 const dateToShow = new Date(selectedDate);
                 dateToShow.setDate(dateToShow.getDate() + offset);
                 const isSelected = dateToShow.getDate() === selectedDate.getDate() &&
@@ -423,50 +437,66 @@ export default function CalendarTab({
           </div>
         )}
 
-        {/* VIEW: MONTH VIEW */}
-        {activeMode === "month" && (
-          <div className="space-y-4">
-            {/* Grid of days in month (simple representation of interactive mini grid) */}
-            <div className="grid grid-cols-7 gap-1 bg-neutral-500/5 p-2 rounded-[var(--radius)] border border-neutral-500/10">
-              {daysOfWeek.map(d => (
-                <div key={d} className="text-center text-[9px] font-bold py-1 text-neutral-400">{d}</div>
-              ))}
-              {Array.from({ length: 31 }).map((_, i) => {
-                const dayNum = i + 1;
-                const mDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), dayNum);
-                const hasLessons = lessons.some(l => {
-                  const lD = new Date(l.dateTime);
-                  return lD.getDate() === mDate.getDate() &&
-                         lD.getMonth() === mDate.getMonth() &&
-                         !l.isCancelled;
-                });
-                const isSelected = dayNum === selectedDate.getDate();
+        {/* VIEW: MONTH VIEW — понедельник первый, правильный сдвиг, нажатие на дату добавляет занятие */}
+        {activeMode === "month" && (() => {
+          const year = selectedDate.getFullYear();
+          const month = selectedDate.getMonth();
+          const daysInMonth = new Date(year, month + 1, 0).getDate();
+          const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7; // Пн=0 … Вс=6
+          const today = new Date();
+          const cells: (number | null)[] = [
+            ...Array.from({ length: firstWeekday }, () => null),
+            ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+          ];
 
-                return (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setSelectedDate(mDate);
-                      setActiveMode("day");
-                    }}
-                    className={`aspect-square rounded-lg flex flex-col items-center justify-center relative text-xs font-bold transition ${
-                      isSelected 
-                        ? "bg-blue-500 text-white" 
-                        : activeDarkMode 
-                          ? "hover:bg-neutral-800 text-white" 
-                          : "hover:bg-neutral-100 text-neutral-900"
-                    }`}
-                  >
-                    <span>{dayNum}</span>
-                    {hasLessons && (
-                      <span className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? "bg-white" : "bg-blue-500"}`} />
-                    )}
-                  </button>
-                );
-              })}
+          return (
+            <div className="space-y-3">
+              <div className="grid grid-cols-7 gap-1 bg-neutral-500/5 p-2 rounded-[var(--radius)] border border-neutral-500/10">
+                {weekDaysMon.map(d => (
+                  <div key={d} className="text-center text-[9px] font-bold py-1 text-neutral-400">{d}</div>
+                ))}
+                {cells.map((dayNum, idx) => {
+                  if (dayNum === null) return <div key={`empty-${idx}`} className="aspect-square" />;
+                  const mDate = new Date(year, month, dayNum);
+                  const hasLessons = lessons.some(l => {
+                    const lD = new Date(l.dateTime);
+                    return lD.getDate() === dayNum && lD.getMonth() === month &&
+                           lD.getFullYear() === year && !l.isCancelled;
+                  });
+                  const isSelected = dayNum === selectedDate.getDate();
+                  const isToday = dayNum === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+
+                  return (
+                    <button
+                      key={dayNum}
+                      onClick={() => {
+                        setSelectedDate(mDate);
+                        setShowAddLessonModal(true);
+                      }}
+                      className={`aspect-square rounded-lg flex flex-col items-center justify-center relative text-xs font-bold transition ${
+                        isSelected
+                          ? "bg-blue-500 text-white"
+                          : isToday
+                            ? `ring-1 ring-blue-500 ${activeDarkMode ? "text-white" : "text-neutral-900"}`
+                            : activeDarkMode
+                              ? "hover:bg-neutral-800 text-white"
+                              : "hover:bg-neutral-100 text-neutral-900"
+                      }`}
+                    >
+                      <span>{dayNum}</span>
+                      {hasLessons && (
+                        <span className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? "bg-white" : "bg-blue-500"}`} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-center opacity-50 px-4">
+                Нажмите на дату, чтобы добавить занятие. Свайп влево/вправо листает месяцы.
+              </p>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         </div>
       </div>
@@ -478,8 +508,13 @@ export default function CalendarTab({
             activeDarkMode ? "bg-neutral-900 text-white" : "bg-[#f2f2f7] text-neutral-900"
           }`}>
             <div className="px-4 py-3 border-b flex items-center justify-between bg-white dark:bg-neutral-800 shrink-0">
-              <h2 className="text-sm font-black">Добавить занятие</h2>
-              <button 
+              <div>
+                <h2 className="text-sm font-black">Добавить занятие</h2>
+                <p className="text-[10px] opacity-60 font-semibold capitalize">
+                  {selectedDate.toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}
+                </p>
+              </div>
+              <button
                 onClick={() => setShowAddLessonModal(false)}
                 className="w-7 h-7 rounded-full bg-neutral-500/10 flex items-center justify-center text-neutral-500"
               >
@@ -550,6 +585,49 @@ export default function CalendarTab({
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold tracking-wider text-neutral-400 uppercase">Повторение</label>
+                  <select
+                    value={formRepeat}
+                    onChange={(e) => setFormRepeat(e.target.value as "none" | "weekly" | "biweekly")}
+                    className={`w-full p-2.5 text-xs rounded-xl border focus:outline-none focus:border-blue-500 ${
+                      activeDarkMode ? "bg-neutral-800 border-neutral-700 text-white" : "bg-white border-neutral-200 text-neutral-900"
+                    }`}
+                  >
+                    <option value="none">Не повторять</option>
+                    <option value="weekly">Каждую неделю</option>
+                    <option value="biweekly">Каждые 2 недели</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold tracking-wider text-neutral-400 uppercase">Сколько занятий</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={52}
+                    value={formRepeatCount}
+                    disabled={formRepeat === "none"}
+                    onChange={(e) => setFormRepeatCount(e.target.value)}
+                    className={`w-full p-2.5 text-xs rounded-xl border focus:outline-none focus:border-blue-500 disabled:opacity-40 ${
+                      activeDarkMode ? "bg-neutral-800 border-neutral-700 text-white" : "bg-white border-neutral-200 text-neutral-900"
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {formRepeat !== "none" && (
+                <p className="text-[10px] opacity-70 -mt-2 flex items-start gap-1.5 leading-relaxed">
+                  <Sparkles size={12} className="text-blue-500 shrink-0 mt-0.5" />
+                  <span>
+                    Будет создано {Math.max(1, Math.min(52, Number(formRepeatCount) || 1))}{" "}
+                    {lessonsWord(Math.max(1, Math.min(52, Number(formRepeatCount) || 1)))}{" "}
+                    {formRepeat === "weekly" ? "каждую неделю" : "каждые 2 недели"} в это же время и день.
+                  </span>
+                </p>
+              )}
+
               <div className="space-y-1">
                 <label className="text-[10px] font-bold tracking-wider text-neutral-400 uppercase">Домашнее задание</label>
                 <textarea
@@ -568,7 +646,9 @@ export default function CalendarTab({
                 id="btn_submit_add_lesson"
                 className="w-full py-3 rounded-xl bg-blue-500 text-white font-bold text-xs hover:bg-blue-600 active:scale-98 transition shadow-md"
               >
-                Запланировать урок
+                {formRepeat === "none"
+                  ? "Запланировать урок"
+                  : `Запланировать ${Math.max(1, Math.min(52, Number(formRepeatCount) || 1))} ${lessonsWord(Math.max(1, Math.min(52, Number(formRepeatCount) || 1)))}`}
               </button>
             </form>
           </div>
