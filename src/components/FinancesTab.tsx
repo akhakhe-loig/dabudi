@@ -155,7 +155,7 @@ export default function FinancesTab({
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
         
         {/* PREMIUM iOS SWIFT CHARTS GRAPH (Custom SVG Layout) */}
-        <div className={`p-4 rounded-2xl border ${
+        <div className={`p-4 rounded-[var(--radius)] border ${
           activeDarkMode ? "bg-[#2C2C2E] border-[#3A3A3C]" : "bg-white border-[#E5E5EA]"
         }`}>
           <div className="flex justify-between items-center mb-3">
@@ -182,7 +182,7 @@ export default function FinancesTab({
                   <div className={`h-24 w-full flex items-end justify-center rounded-lg transition-all duration-300 ${
                     isHovered 
                       ? "bg-[#30d158]/20" 
-                      : "bg-[#007AFF]/10 hover:bg-[#007AFF]/25"
+                      : "bg-blue-500/10 hover:bg-blue-500/25"
                   }`}>
                     <div 
                       className={`w-[60%] rounded-t-md transition-all duration-500 ${

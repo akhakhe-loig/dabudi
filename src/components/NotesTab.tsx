@@ -87,11 +87,11 @@ export default function NotesTab({
                 <span className="text-[10px] font-bold uppercase opacity-60 text-amber-500 tracking-wider flex items-center gap-1">
                   <Pin size={10} className="fill-amber-500" /> Закрепленные
                 </span>
-                <div className={`rounded-2xl border divide-y overflow-hidden ${
+                <div className={`rounded-[var(--radius)] border divide-y overflow-hidden ${
                   activeDarkMode ? "bg-[#2C2C2E] border-[#3A3A3C] divide-[#3A3A3C]" : "bg-white border-[#E5E5EA] divide-neutral-100"
                 }`}>
                   {pinnedNotes.map(note => {
-                    const dateStr = new Date(note.updatedAt).toLocaleDateString([], { day: "numeric", month: "short" });
+                    const dateStr = new Date(note.updatedAt).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
                     const snippet = note.content ? note.content.substring(0, 50) + "..." : "Нет текста";
                     const tasksDone = note.checklist?.filter(t => t.isCompleted).length || 0;
                     const tasksTotal = note.checklist?.length || 0;
@@ -141,11 +141,11 @@ export default function NotesTab({
               </span>
 
               {recentNotes.length > 0 ? (
-                <div className={`rounded-2xl border divide-y overflow-hidden ${
+                <div className={`rounded-[var(--radius)] border divide-y overflow-hidden ${
                   activeDarkMode ? "bg-[#2C2C2E] border-[#3A3A3C] divide-[#3A3A3C]" : "bg-white border-[#E5E5EA] divide-neutral-100"
                 }`}>
                   {recentNotes.map(note => {
-                    const dateStr = new Date(note.updatedAt).toLocaleDateString([], { day: "numeric", month: "short" });
+                    const dateStr = new Date(note.updatedAt).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
                     const snippet = note.content ? note.content.substring(0, 50) + "..." : "Нет текста";
                     const tasksDone = note.checklist?.filter(t => t.isCompleted).length || 0;
                     const tasksTotal = note.checklist?.length || 0;

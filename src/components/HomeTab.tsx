@@ -4,6 +4,7 @@ import {
   TrendingUp, Calendar, AlertCircle, MessageCircle, ArrowRight, Check 
 } from "lucide-react";
 import { Student, Lesson, Task, Payment } from "../types";
+import { lessonsWord } from "../utils";
 
 interface HomeTabProps {
   students: Student[];
@@ -152,23 +153,23 @@ export default function HomeTab({
           return (
             <div 
               id="upcoming_lesson_card"
-              className={`p-4 rounded-2xl relative overflow-hidden transition-all duration-300 shadow-sm ${
+              className={`p-4 rounded-[var(--radius)] relative overflow-hidden transition-all duration-300 shadow-sm ${
                 activeDarkMode 
                   ? "bg-[#2C2C2E] border border-[#3A3A3C]" 
-                  : "bg-gradient-to-br from-[#007AFF] to-[#0051D6] text-white"
+                  : "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
               }`}
             >
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      activeDarkMode ? "bg-[#007AFF]/20 text-[#30d158]" : "bg-white/20 text-white"
+                      activeDarkMode ? "bg-blue-500/20 text-blue-500" : "bg-white/20 text-white"
                     }`}>
                       Ближайший урок
                     </span>
                     <span className="text-xs font-semibold opacity-85 flex items-center gap-1">
                       <Clock size={11} />
-                      {lessonTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {lessonTime.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
                   <h3 className="text-lg font-bold leading-tight pt-1">
@@ -199,14 +200,14 @@ export default function HomeTab({
           );
         })()
       ) : (
-        <div className={`p-4 rounded-2xl border text-center py-6 ${
+        <div className={`p-4 rounded-[var(--radius)] border text-center py-6 ${
           activeDarkMode ? "bg-[#2C2C2E] border-[#3A3A3C] text-neutral-400" : "bg-white border-[#E5E5EA] text-neutral-500"
         }`}>
           <Calendar size={28} className="mx-auto opacity-50 mb-2" />
           <p className="text-xs font-semibold">На сегодня занятий больше нет</p>
           <button 
             onClick={() => onOpenSheet("addLesson")}
-            className="text-[11px] font-bold text-[#007AFF] mt-1 hover:underline"
+            className="text-[11px] font-bold text-blue-500 mt-1 hover:underline"
           >
             Запланировать урок
           </button>
@@ -218,7 +219,7 @@ export default function HomeTab({
         <button
           id="quick_action_add_student"
           onClick={() => onOpenSheet("addStudent")}
-          className={`p-3 rounded-xl flex flex-col items-center justify-center gap-1.5 transition text-center shadow-xs active:scale-95 border ${
+          className={`p-3 rounded-[var(--radius)] flex flex-col items-center justify-center gap-1.5 transition text-center shadow-xs active:scale-95 border ${
             activeDarkMode ? "bg-[#2C2C2E] hover:bg-[#3A3A3C] border-[#3A3A3C] text-white" : "bg-white hover:bg-neutral-50 border-[#E5E5EA] text-neutral-900"
           }`}
         >
@@ -231,7 +232,7 @@ export default function HomeTab({
         <button
           id="quick_action_add_lesson"
           onClick={() => onOpenSheet("addLesson")}
-          className={`p-3 rounded-xl flex flex-col items-center justify-center gap-1.5 transition text-center shadow-xs active:scale-95 border ${
+          className={`p-3 rounded-[var(--radius)] flex flex-col items-center justify-center gap-1.5 transition text-center shadow-xs active:scale-95 border ${
             activeDarkMode ? "bg-[#2C2C2E] hover:bg-[#3A3A3C] border-[#3A3A3C] text-white" : "bg-white hover:bg-neutral-50 border-[#E5E5EA] text-neutral-900"
           }`}
         >
@@ -244,7 +245,7 @@ export default function HomeTab({
         <button
           id="quick_action_log_payment"
           onClick={() => onOpenSheet("addPayment")}
-          className={`p-3 rounded-xl flex flex-col items-center justify-center gap-1.5 transition text-center shadow-xs active:scale-95 border ${
+          className={`p-3 rounded-[var(--radius)] flex flex-col items-center justify-center gap-1.5 transition text-center shadow-xs active:scale-95 border ${
             activeDarkMode ? "bg-[#2C2C2E] hover:bg-[#3A3A3C] border-[#3A3A3C] text-white" : "bg-white hover:bg-neutral-50 border-[#E5E5EA] text-neutral-900"
           }`}
         >
@@ -257,7 +258,7 @@ export default function HomeTab({
 
       {/* Finance Metrics Overview (Apple Activity Rings summary style) */}
       <div className="grid grid-cols-2 gap-3">
-        <div className={`p-3.5 rounded-2xl border flex items-center gap-3 shadow-xs ${
+        <div className={`p-3.5 rounded-[var(--radius)] border flex items-center gap-3 shadow-xs ${
           activeDarkMode ? "bg-[#2C2C2E] border-[#3A3A3C] text-white" : "bg-white border-[#E5E5EA] text-neutral-900"
         }`}>
           <div className="w-8 h-8 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center">
@@ -269,7 +270,7 @@ export default function HomeTab({
           </div>
         </div>
 
-        <div className={`p-3.5 rounded-2xl border flex items-center gap-3 shadow-xs ${
+        <div className={`p-3.5 rounded-[var(--radius)] border flex items-center gap-3 shadow-xs ${
           activeDarkMode ? "bg-[#2C2C2E] border-[#3A3A3C] text-white" : "bg-white border-[#E5E5EA] text-neutral-900"
         }`}>
           <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
@@ -289,12 +290,12 @@ export default function HomeTab({
             Сетка занятий на сегодня
           </h2>
           <span className={`text-[10px] font-bold ${activeDarkMode ? "text-neutral-500" : "text-neutral-400"}`}>
-            {todayLessons.length} уроков
+            {todayLessons.length} {lessonsWord(todayLessons.length)}
           </span>
         </div>
 
         {todayLessons.length > 0 ? (
-          <div className={`rounded-2xl border overflow-hidden divide-y ${
+          <div className={`rounded-[var(--radius)] border overflow-hidden divide-y ${
             activeDarkMode ? "bg-[#2C2C2E] border-[#3A3A3C] divide-[#3A3A3C]" : "bg-white border-[#E5E5EA] divide-neutral-100"
           }`}>
             {todayLessons.map(lesson => {
@@ -311,7 +312,7 @@ export default function HomeTab({
                     {/* Time block */}
                     <div className="flex flex-col items-center justify-center border-r pr-3 min-w-[50px] border-neutral-200/50">
                       <span className={`text-xs font-black tracking-tight ${activeDarkMode ? "text-neutral-200" : "text-neutral-800"}`}>
-                        {time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        {time.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                       </span>
                       <span className="text-[9px] opacity-60 font-semibold">{lesson.durationMinutes} мин</span>
                     </div>
@@ -363,7 +364,7 @@ export default function HomeTab({
             })}
           </div>
         ) : (
-          <div className={`p-5 rounded-2xl border text-center ${
+          <div className={`p-5 rounded-[var(--radius)] border text-center ${
             activeDarkMode ? "bg-neutral-900/40 border-neutral-800 text-neutral-500" : "bg-neutral-50 border-neutral-150 text-neutral-400"
           }`}>
             <span className="text-xs font-medium">Нет запланированных уроков на сегодня</span>
@@ -373,7 +374,7 @@ export default function HomeTab({
 
       {/* Unpaid Lessons Alert (Apple Reminders style) */}
       {unpaidLessons.length > 0 && (
-        <div className={`p-3.5 rounded-2xl border ${
+        <div className={`p-3.5 rounded-[var(--radius)] border ${
           activeDarkMode ? "bg-amber-500/5 border-amber-500/25 text-amber-200" : "bg-amber-50 border-amber-200 text-amber-900"
         }`}>
           <div className="flex items-start gap-2.5">
@@ -389,7 +390,7 @@ export default function HomeTab({
                 {unpaidLessons.slice(0, 3).map(ul => {
                   const s = getStudentForLesson(ul.studentId);
                   if (!s) return null;
-                  const dateStr = new Date(ul.dateTime).toLocaleDateString([], { day: "numeric", month: "short" });
+                  const dateStr = new Date(ul.dateTime).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
                   const amount = (ul.durationMinutes / 60) * s.hourlyRate;
                   return (
                     <div key={ul.id} className="flex items-center justify-between text-[10px] bg-neutral-500/5 p-1.5 rounded-lg border border-neutral-500/10">
@@ -429,7 +430,7 @@ export default function HomeTab({
         </div>
 
         {todayTasks.length > 0 ? (
-          <div className={`rounded-2xl border divide-y overflow-hidden ${
+          <div className={`rounded-[var(--radius)] border divide-y overflow-hidden ${
             activeDarkMode ? "bg-[#2C2C2E] border-[#3A3A3C] divide-[#3A3A3C]" : "bg-white border-[#E5E5EA] divide-neutral-100"
           }`}>
             {todayTasks.map(task => (
@@ -454,7 +455,7 @@ export default function HomeTab({
             ))}
           </div>
         ) : (
-          <div className={`p-5 rounded-2xl border text-center ${
+          <div className={`p-5 rounded-[var(--radius)] border text-center ${
             activeDarkMode ? "bg-neutral-900/40 border-neutral-800 text-neutral-500" : "bg-neutral-50 border-neutral-150 text-neutral-400"
           }`}>
             <span className="text-xs font-medium">Все дела на сегодня выполнены! 🎉</span>

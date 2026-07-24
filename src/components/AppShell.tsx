@@ -7,6 +7,7 @@ interface AppShellProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   activeDarkMode: boolean;
+  wallpaperUrl: string | null;
   isLiveActivityActive: boolean;
   liveActivityStudent: string;
   liveActivityTimeLeft: number;
@@ -41,6 +42,7 @@ export default function AppShell({
   activeTab,
   setActiveTab,
   activeDarkMode,
+  wallpaperUrl,
   isLiveActivityActive,
   liveActivityStudent,
   liveActivityTimeLeft,
@@ -51,16 +53,30 @@ export default function AppShell({
 }: AppShellProps) {
   return (
     <div
-      className={`h-[100dvh] w-full flex flex-col overflow-hidden font-sans antialiased select-none transition-colors duration-500 ${
+      className={`h-full w-full flex flex-col overflow-hidden font-sans antialiased select-none transition-colors duration-500 ${
         activeDarkMode ? "bg-neutral-950 text-white" : "bg-[#f2f2f7] text-neutral-900"
       }`}
     >
+      {/* Слой обоев с цветами (поверх фона, за контентом) */}
+      {wallpaperUrl && (
+        <div
+          className="fixed inset-0 z-0 pointer-events-none"
+          aria-hidden="true"
+          style={{
+            backgroundImage: `url("${wallpaperUrl}")`,
+            backgroundRepeat: "repeat",
+            backgroundSize: "150px 150px",
+            opacity: activeDarkMode ? 0.45 : 0.6,
+          }}
+        />
+      )}
+
       {/* Безопасная зона сверху (под челкой) */}
-      <div style={{ paddingTop: "env(safe-area-inset-top)" }} className="shrink-0" />
+      <div style={{ paddingTop: "env(safe-area-inset-top)" }} className="shrink-0 relative z-10" />
 
       {/* Плашка активного урока (Live Activity) */}
       {isLiveActivityActive && (
-        <div className="shrink-0 px-4 py-2 flex items-center gap-2.5 bg-black text-white z-40">
+        <div className="shrink-0 px-4 py-2 flex items-center gap-2.5 bg-black text-white relative z-20">
           <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
           <div className="text-xs font-bold truncate flex-1">
             Идёт урок: {liveActivityStudent} ({formatTimeLeft(liveActivityTimeLeft)})
@@ -75,12 +91,12 @@ export default function AppShell({
       )}
 
       {/* Контент активной вкладки */}
-      <main className="flex-1 flex flex-col overflow-hidden relative">
+      <main className="flex-1 flex flex-col overflow-hidden relative z-10">
         {children}
 
         {/* Всплывающее уведомление (голосовой ассистент из Настроек) */}
         {siriMessage && (
-          <div className="absolute inset-x-3 bottom-3 bg-neutral-900/95 backdrop-blur-lg border border-indigo-500/30 rounded-2xl p-3 z-50 text-white shadow-2xl space-y-1.5 pointer-events-auto">
+          <div className="absolute inset-x-3 bottom-3 bg-neutral-900/95 backdrop-blur-lg border border-indigo-500/30 rounded-[var(--radius)] p-3 z-50 text-white shadow-2xl space-y-1.5 pointer-events-auto">
             <div className="flex items-center justify-between text-[10px] uppercase font-bold text-indigo-400">
               <span className="flex items-center gap-1"><Sparkles size={11} /> Ассистент</span>
               <button onClick={onClearSiri} className="text-neutral-500 hover:text-white">
@@ -95,8 +111,8 @@ export default function AppShell({
 
       {/* Нижняя панель вкладок */}
       <nav
-        className={`shrink-0 flex items-stretch justify-around border-t z-40 ${
-          activeDarkMode ? "bg-neutral-950/95 border-neutral-800/80" : "bg-white/95 border-neutral-200"
+        className={`shrink-0 flex items-stretch justify-around border-t relative z-20 backdrop-blur-xl ${
+          activeDarkMode ? "bg-neutral-950/85 border-neutral-800/80" : "bg-white/85 border-neutral-200"
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
@@ -113,12 +129,12 @@ export default function AppShell({
               <IconComponent
                 size={22}
                 className={`transition duration-150 ${
-                  isSelected ? "text-[#007AFF] scale-110" : "text-neutral-400"
+                  isSelected ? "text-blue-500 scale-110" : "text-neutral-400"
                 }`}
               />
               <span
                 className={`text-[10px] font-bold mt-1 tracking-tight transition select-none ${
-                  isSelected ? "text-[#007AFF]" : "text-neutral-400"
+                  isSelected ? "text-blue-500" : "text-neutral-400"
                 }`}
               >
                 {tab.label}

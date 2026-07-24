@@ -1,1 +1,41 @@
 @import "tailwindcss";
+
+/*
+  Акцентный цвет приложения задаётся переменными --accent / --accent-dark
+  на корневом элементе в App.tsx (по выбранной теме). Здесь мы переопределяем
+  палитру blue-* Tailwind на эти переменные — поэтому все существующие классы
+  bg-blue-500, text-blue-500, border-blue-500/30 и т.п. автоматически следуют
+  выбранной теме, без правок в каждом компоненте.
+*/
+:root {
+  --accent: #007AFF;
+  --accent-dark: #0051D6;
+  --radius: 0.9rem;
+
+  --color-blue-50: color-mix(in srgb, var(--accent) 12%, transparent);
+  --color-blue-100: color-mix(in srgb, var(--accent) 20%, transparent);
+  --color-blue-200: color-mix(in srgb, var(--accent) 32%, transparent);
+  --color-blue-300: color-mix(in srgb, var(--accent) 55%, transparent);
+  --color-blue-400: var(--accent);
+  --color-blue-500: var(--accent);
+  --color-blue-600: var(--accent-dark);
+  --color-blue-700: var(--accent-dark);
+  --color-blue-900: var(--accent-dark);
+}
+
+/* Небольшие анимации (появление карточек, перелистывание месяцев) */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-fade-in { animation: fade-in 0.25s ease-out both; }
+.animate-slide-in-right { animation: slide-in-right 0.28s ease-out both; }
+.animate-slide-in-left { animation: slide-in-left 0.28s ease-out both; }

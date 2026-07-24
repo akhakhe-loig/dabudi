@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { 
-  ChevronLeft, ChevronRight, Plus, Clock, Search, BookOpen, AlertCircle, Sparkles, X 
+import React, { useState, useRef } from "react";
+import {
+  ChevronLeft, ChevronRight, Plus, Clock, Search, BookOpen, AlertCircle, Sparkles, X
 } from "lucide-react";
 import { Student, Lesson } from "../types";
+import { lessonsWord } from "../utils";
 
 interface CalendarTabProps {
   students: Student[];
@@ -35,10 +36,34 @@ export default function CalendarTab({
     "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
   ];
 
-  const changeDate = (days: number) => {
-    const next = new Date(selectedDate);
-    next.setDate(next.getDate() + days);
-    setSelectedDate(next);
+  // Пролистывание месяцев (стрелки + свайп пальцем влево/вправо)
+  const [slideDir, setSlideDir] = useState<"left" | "right" | null>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const changeMonth = (delta: number) => {
+    setSlideDir(delta > 0 ? "right" : "left");
+    setSelectedDate((prev) => {
+      const day = prev.getDate();
+      const d = new Date(prev.getFullYear(), prev.getMonth() + delta, 1);
+      const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      d.setDate(Math.min(day, lastDay));
+      return d;
+    });
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const s = touchStart.current;
+    touchStart.current = null;
+    if (!s) return;
+    const dx = e.changedTouches[0].clientX - s.x;
+    const dy = e.changedTouches[0].clientY - s.y;
+    // Горизонтальный свайп (и явно не вертикальный скролл) листает месяц
+    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+      changeMonth(dx < 0 ? 1 : -1);
+    }
   };
 
   const getLessonsForDate = (date: Date) => {
@@ -151,41 +176,51 @@ export default function CalendarTab({
         </div>
       </div>
 
-      {/* Date Navigation Subbar */}
+      {/* Date Navigation Subbar — месяц листается стрелками или свайпом пальцем */}
       <div className={`px-4 py-2.5 border-b flex items-center justify-between shrink-0 ${
         activeDarkMode ? "bg-neutral-900/60 border-neutral-800" : "bg-white border-neutral-150"
       }`}>
-        <div className="flex items-center gap-2">
-          <span className={`text-sm font-black ${activeDarkMode ? "text-white" : "text-neutral-900"}`}>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => changeMonth(-1)}
+            aria-label="Предыдущий месяц"
+            className="p-1.5 rounded-lg bg-neutral-500/10 hover:bg-neutral-500/20 text-neutral-500 transition active:scale-90"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className={`text-sm font-black min-w-[128px] text-center ${activeDarkMode ? "text-white" : "text-neutral-900"}`}>
             {monthsRu[selectedDate.getMonth()]} {selectedDate.getFullYear()}
           </span>
+          <button
+            onClick={() => changeMonth(1)}
+            aria-label="Следующий месяц"
+            className="p-1.5 rounded-lg bg-neutral-500/10 hover:bg-neutral-500/20 text-neutral-500 transition active:scale-90"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
 
-        <div className="flex items-center gap-1">
-          <button 
-            onClick={() => changeDate(-1)} 
-            className="p-1.5 rounded-lg bg-neutral-500/10 hover:bg-neutral-500/20 text-neutral-500 transition active:scale-95"
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <button
-            onClick={() => setSelectedDate(new Date())}
-            className="text-[9px] font-bold px-2 py-1.5 rounded-lg bg-neutral-500/10 hover:bg-neutral-500/20 text-[#007AFF] transition active:scale-95 uppercase tracking-wider"
-          >
-            Сегодня
-          </button>
-          <button 
-            onClick={() => changeDate(1)} 
-            className="p-1.5 rounded-lg bg-neutral-500/10 hover:bg-neutral-500/20 text-neutral-500 transition active:scale-95"
-          >
-            <ChevronRight size={14} />
-          </button>
-        </div>
+        <button
+          onClick={() => { setSlideDir(null); setSelectedDate(new Date()); }}
+          className="text-[9px] font-bold px-2.5 py-1.5 rounded-lg bg-neutral-500/10 hover:bg-neutral-500/20 text-blue-500 transition active:scale-95 uppercase tracking-wider"
+        >
+          Сегодня
+        </button>
       </div>
 
-      {/* Calendar content views */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
-        
+      {/* Calendar content views — свайп пальцем листает месяцы */}
+      <div
+        className="flex-1 overflow-y-auto p-4 pb-24"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div
+          key={`${selectedDate.getFullYear()}-${selectedDate.getMonth()}`}
+          className={`space-y-4 ${
+            slideDir === "right" ? "animate-slide-in-right" : slideDir === "left" ? "animate-slide-in-left" : ""
+          }`}
+        >
+
         {/* VIEW: DAY VIEW */}
         {activeMode === "day" && (
           <div className="space-y-4">
@@ -209,9 +244,9 @@ export default function CalendarTab({
                     onClick={() => setSelectedDate(dateToShow)}
                     className={`p-2 rounded-xl flex flex-col items-center gap-1 transition ${
                       isSelected 
-                        ? "bg-[#007AFF] text-white font-bold" 
+                        ? "bg-blue-500 text-white font-bold" 
                         : isToday 
-                          ? "bg-neutral-500/15 text-[#007AFF] font-bold" 
+                          ? "bg-neutral-500/15 text-blue-500 font-bold" 
                           : "hover:bg-neutral-500/5 text-neutral-500"
                     }`}
                   >
@@ -241,7 +276,7 @@ export default function CalendarTab({
 
               {/* Free Slots Popover */}
               {freeSlotsResult && (
-                <div className={`p-3 rounded-2xl border relative animate-fade-in ${
+                <div className={`p-3 rounded-[var(--radius)] border relative animate-fade-in ${
                   activeDarkMode ? "bg-blue-500/5 border-blue-500/20 text-blue-200" : "bg-blue-50 border-blue-200 text-blue-900"
                 }`}>
                   <button 
@@ -301,7 +336,7 @@ export default function CalendarTab({
                           <div className="flex items-center gap-1.5 text-[9px] text-neutral-400">
                             <Clock size={10} />
                             <span>
-                              {lTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} ({lesson.durationMinutes} мин)
+                              {lTime.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })} ({lesson.durationMinutes} мин)
                             </span>
                           </div>
                         </div>
@@ -374,7 +409,7 @@ export default function CalendarTab({
 
                       <div className="space-y-0.5">
                         <span className="font-bold">
-                          {lessonsCount > 0 ? `${lessonsCount} уроков за день` : "Свободный день"}
+                          {lessonsCount > 0 ? `${lessonsCount} ${lessonsWord(lessonsCount)} за день` : "Свободный день"}
                         </span>
                         <span className="text-[10px] opacity-60 block">Ожидаемый доход: {totalSalary} ₽</span>
                       </div>
@@ -392,7 +427,7 @@ export default function CalendarTab({
         {activeMode === "month" && (
           <div className="space-y-4">
             {/* Grid of days in month (simple representation of interactive mini grid) */}
-            <div className="grid grid-cols-7 gap-1 bg-neutral-500/5 p-2 rounded-2xl border border-neutral-500/10">
+            <div className="grid grid-cols-7 gap-1 bg-neutral-500/5 p-2 rounded-[var(--radius)] border border-neutral-500/10">
               {daysOfWeek.map(d => (
                 <div key={d} className="text-center text-[9px] font-bold py-1 text-neutral-400">{d}</div>
               ))}
@@ -416,7 +451,7 @@ export default function CalendarTab({
                     }}
                     className={`aspect-square rounded-lg flex flex-col items-center justify-center relative text-xs font-bold transition ${
                       isSelected 
-                        ? "bg-[#007AFF] text-white" 
+                        ? "bg-blue-500 text-white" 
                         : activeDarkMode 
                           ? "hover:bg-neutral-800 text-white" 
                           : "hover:bg-neutral-100 text-neutral-900"
@@ -433,6 +468,7 @@ export default function CalendarTab({
           </div>
         )}
 
+        </div>
       </div>
 
       {/* Quick Add Lesson Dialog */}

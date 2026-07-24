@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { 
-  Settings, Moon, Sun, Bell, Volume2, Activity, Database, 
-  FileText, Table, Shield, Check, RefreshCw, Smartphone, Play, HelpCircle, Download
+import {
+  Settings, Moon, Sun, Bell, Volume2, Activity, Database,
+  FileText, Table, Shield, Check, RefreshCw, Smartphone, Play, HelpCircle, Download,
+  Palette, ChevronRight
 } from "lucide-react";
 import { Student, Lesson, Payment } from "../types";
 
@@ -11,6 +12,7 @@ interface SettingsTabProps {
   payments: Payment[];
   activeDarkMode: boolean;
   onToggleDarkMode: () => void;
+  onOpenAppearance: () => void;
   onTriggerSiriAlert: (command: string, response: string) => void;
 }
 
@@ -20,6 +22,7 @@ export default function SettingsTab({
   payments,
   activeDarkMode,
   onToggleDarkMode,
+  onOpenAppearance,
   onTriggerSiriAlert
 }: SettingsTabProps) {
   const [remindMinutes, setRemindMinutes] = useState("30");
@@ -171,10 +174,23 @@ export default function SettingsTab({
           <div className={`rounded-xl border divide-y overflow-hidden ${
             activeDarkMode ? "bg-[#2C2C2E] border-[#3A3A3C] divide-[#3A3A3C]" : "bg-white border-[#E5E5EA] divide-neutral-100"
           }`}>
+            <div
+              onClick={onOpenAppearance}
+              className="p-3 flex items-center justify-between text-xs cursor-pointer hover:bg-neutral-500/5 transition"
+            >
+              <span className="font-semibold flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                  <Palette size={13} />
+                </span>
+                Тема, цвет и обои
+              </span>
+              <ChevronRight size={15} className="text-neutral-400" />
+            </div>
+
             <div className="p-3 flex items-center justify-between text-xs">
               <span className="font-semibold flex items-center gap-2">
                 {activeDarkMode ? <Moon size={15} className="text-indigo-400" /> : <Sun size={15} className="text-amber-500" />}
-                Темная тема iOS
+                Темная тема
               </span>
               <button 
                 onClick={onToggleDarkMode}
@@ -311,9 +327,9 @@ export default function SettingsTab({
         {/* Safety Disclaimer Footer */}
         <div className="text-center py-4 space-y-1 opacity-50">
           <Shield size={20} className="mx-auto" />
-          <h5 className="text-[10px] font-bold">Офлайн Хранилище Secure Encrypted</h5>
+          <h5 className="text-[10px] font-bold">Данные хранятся на вашем устройстве</h5>
           <p className="text-[8px] max-w-xs mx-auto leading-normal">
-            Все данные Tutor CRM шифруются с использованием аппаратного модуля Apple Secure Enclave и хранятся локально на вашем устройстве.
+            Информация об учениках, занятиях и оплатах сохраняется локально в этом браузере и никуда не отправляется. Регулярно делайте резервную копию (кнопка выше).
           </p>
         </div>
 

@@ -7,6 +7,8 @@ import CalendarTab from "./components/CalendarTab";
 import NotesTab from "./components/NotesTab";
 import FinancesTab from "./components/FinancesTab";
 import SettingsTab from "./components/SettingsTab";
+import AppearanceScreen from "./components/AppearanceScreen";
+import { AppTheme, DEFAULT_THEME, getAccent, getRadiusValue, wallpaperUrl } from "./theme";
 
 // Pre-populated high-quality initial data bank to simulate SwiftData persistent storage
 const INITIAL_STUDENTS: Student[] = [
@@ -183,7 +185,11 @@ const INITIAL_TASKS = (): Task[] => {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("home");
-  const [activeDarkMode, setActiveDarkMode] = useState(true);
+
+  // Внешний вид (тема, цвет, скругление, обои) — сохраняется в localStorage
+  const [theme, setTheme] = useState<AppTheme>(DEFAULT_THEME);
+  const [showAppearance, setShowAppearance] = useState(false);
+  const activeDarkMode = theme.dark;
 
   // Core CRM states (backed by local storage)
   const [students, setStudents] = useState<Student[]>([]);
@@ -245,6 +251,33 @@ export default function App() {
       localStorage.setItem("tutor_crm_tasks", JSON.stringify(initT));
     }
   }, []);
+
+  // Загрузка настроек внешнего вида
+  useEffect(() => {
+    const cached = localStorage.getItem("tutor_crm_theme");
+    if (cached) {
+      try {
+        setTheme({ ...DEFAULT_THEME, ...JSON.parse(cached) });
+      } catch {
+        /* ignore malformed */
+      }
+    }
+  }, []);
+
+  // Сохранение настроек внешнего вида
+  useEffect(() => {
+    localStorage.setItem("tutor_crm_theme", JSON.stringify(theme));
+  }, [theme]);
+
+  // Применение акцентного цвета и скругления к :root — переопределяет
+  // палитру blue-* из index.css, поэтому весь интерфейс следует теме.
+  useEffect(() => {
+    const a = getAccent(theme.accent);
+    const root = document.documentElement;
+    root.style.setProperty("--accent", a.accent);
+    root.style.setProperty("--accent-dark", a.accentDark);
+    root.style.setProperty("--radius", getRadiusValue(theme.radius));
+  }, [theme.accent, theme.radius]);
 
   // Sync state triggers
   const saveState = (key: string, data: any) => {
@@ -410,10 +443,12 @@ export default function App() {
   };
 
   return (
+    <div className="h-[100dvh] w-full">
     <AppShell
       activeTab={activeTab}
       setActiveTab={setActiveTab}
       activeDarkMode={activeDarkMode}
+      wallpaperUrl={wallpaperUrl(theme.wallpaper)}
       isLiveActivityActive={isLiveActivityActive}
       liveActivityStudent={liveActivityStudent}
       liveActivityTimeLeft={liveActivityTimeLeft}
@@ -493,10 +528,20 @@ export default function App() {
                 lessons={lessons}
                 payments={payments}
                 activeDarkMode={activeDarkMode}
-                onToggleDarkMode={() => setActiveDarkMode(!activeDarkMode)}
+                onToggleDarkMode={() => setTheme((t) => ({ ...t, dark: !t.dark }))}
+                onOpenAppearance={() => setShowAppearance(true)}
                 onTriggerSiriAlert={handleTriggerSiri}
               />
             )}
     </AppShell>
+
+      {showAppearance && (
+        <AppearanceScreen
+          theme={theme}
+          onChange={setTheme}
+          onClose={() => setShowAppearance(false)}
+        />
+      )}
+    </div>
   );
 }

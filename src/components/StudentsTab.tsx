@@ -4,6 +4,7 @@ import {
   Trash2, FileText, CheckSquare, Square, DollarSign, ArrowRight, UserPlus, FileUp
 } from "lucide-react";
 import { Student, Lesson, Payment } from "../types";
+import { lessonsWord } from "../utils";
 
 interface StudentsTabProps {
   students: Student[];
@@ -187,7 +188,7 @@ export default function StudentsTab({
                         {student.hourlyRate} ₽/ч
                       </span>
                       <span className="text-[9px] opacity-60">
-                        {metrics.completedCount} уроков
+                        {metrics.completedCount} {lessonsWord(metrics.completedCount)}
                       </span>
                     </div>
                   </div>
@@ -274,7 +275,7 @@ export default function StudentsTab({
                   detailTab === tab.id
                     ? activeDarkMode 
                       ? "bg-white text-black" 
-                      : "bg-[#007AFF] text-white"
+                      : "bg-blue-500 text-white"
                     : "bg-neutral-500/10 text-neutral-500 dark:text-neutral-400"
                 }`}
               >
@@ -305,7 +306,7 @@ export default function StudentsTab({
                 <div className={`p-3.5 rounded-xl border space-y-2 ${activeDarkMode ? "bg-[#2C2C2E] border-[#3A3A3C]" : "bg-white border-[#E5E5EA]"}`}>
                   <div className="flex items-center justify-between text-[11px] font-bold">
                     <span>Успеваемость и прогресс</span>
-                    <span className="text-[#007AFF]">{getStudentMetrics(selectedStudent.id).homeworkProgress}%</span>
+                    <span className="text-blue-500">{getStudentMetrics(selectedStudent.id).homeworkProgress}%</span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
                     <div 
@@ -367,10 +368,10 @@ export default function StudentsTab({
                           >
                             <div className="space-y-1">
                               <span className="font-bold block">
-                                {date.toLocaleDateString([], { day: "numeric", month: "long", year: "numeric" })}
+                                {date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
                               </span>
                               <span className="opacity-60 text-[10px] block">
-                                {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} • {lesson.durationMinutes} мин
+                                {date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })} • {lesson.durationMinutes} мин
                               </span>
                               <span className="italic text-[10px] text-neutral-400 block">Тема: {lesson.topic || "Не указана"}</span>
                             </div>
