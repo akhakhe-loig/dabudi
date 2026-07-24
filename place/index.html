@@ -1107,6 +1107,90 @@ body[data-theme=dark] .pp-nav.on .t,body[data-theme=midnight] .pp-nav.on .t{colo
 .sb-item.active::before{content:'';position:absolute;left:-1px;top:50%;transform:translateY(-50%);
   width:3px;height:18px;border-radius:0 3px 3px 0;background:var(--acc)}
 
+/* ============================================================= */
+/* ===== МИКРОАНИМАЦИИ И ПОЛИРОВКА СОСТОЯНИЙ =================== */
+/*  Всё завязано на действия пользователя (hover/focus/active) — */
+/*  не срабатывает при перерисовке списков.                      */
+/* ============================================================= */
+/* единый фокус-ринг для клавиатурной навигации */
+.chk:focus-visible,.al-chk:focus-visible,.lnk:focus-visible,.chip:focus-visible,
+.sbtn:focus-visible,.fchip:focus-visible,.mchip:focus-visible,.qbt:focus-visible,
+.thc:focus-visible,.pp-nav:focus-visible,.pp-q:focus-visible{outline:none;box-shadow:0 0 0 3px var(--acc-line)}
+/* приятное нажатие и плавная «заливка» чекбоксов */
+.chk,.al-chk{transition:background .18s var(--ease),border-color .18s var(--ease),transform .22s var(--spring)}
+.chk:active,.al-chk:active{transform:scale(.85)}
+/* чипы/пилюли — пружинистый ховер и нажатие */
+.chip,.stpill,.delta,.chpill,.cand-c,.dg-badge{transition:transform .2s var(--spring),filter .15s var(--ease),box-shadow .2s var(--ease)}
+.stpill:hover{transform:translateY(-1px)}
+button.chip:active,.fchip:active,.lnk:active,.mchip:active{transform:scale(.95)}
+/* иконки стат-карточек мягко «оживают» при наведении на карту */
+.stico{transition:transform .3s var(--spring)}
+.statcard:hover .stico{transform:scale(1.08) rotate(-3deg)}
+/* стеклянный блик сверху у модалки */
+.modal{position:relative}
+.modal::before{content:'';position:absolute;left:0;right:0;top:0;height:1px;border-radius:16px 16px 0 0;
+  background:linear-gradient(90deg,transparent,var(--glass-brd),transparent);pointer-events:none}
+/* пустые состояния — мягкое появление */
+.empty{animation:emptyIn .42s var(--ease) backwards}
+@keyframes emptyIn{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}
+/* индикатор «Сохранено» — лёгкая пульсация точки, пока виден */
+.savedot.on::before{animation:savePulse 1.7s ease-in-out infinite}
+@keyframes savePulse{0%,100%{box-shadow:0 0 0 0 rgba(34,163,102,0)}50%{box-shadow:0 0 0 4px rgba(34,163,102,.18)}}
+
+/* ============================================================= */
+/* ===== СМАРТ-НАВИГАЦИЯ: реакции пета на события =============== */
+/* ============================================================= */
+.pet-badge{position:absolute;top:-4px;right:-4px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;
+  background:var(--red);color:#fff;font-size:10.5px;font-weight:800;line-height:1;
+  display:none;align-items:center;justify-content:center;z-index:2;
+  box-shadow:0 0 0 2px var(--bg),0 2px 8px rgba(229,83,75,.5)}
+.pet-badge.on{display:flex;animation:petBadgePop .42s var(--spring)}
+@keyframes petBadgePop{from{transform:scale(0)}60%{transform:scale(1.18)}to{transform:scale(1)}}
+.pp-nav{position:relative}
+.pp-navbadge{margin-left:auto;min-width:17px;height:17px;padding:0 5px;border-radius:9px;background:var(--red);
+  color:#fff;font-size:9.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.pet-hint{position:absolute;left:calc(100% + 14px);bottom:6px;width:max-content;max-width:230px;
+  background:var(--glass-bg);-webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5);
+  border:1px solid var(--glass-brd);border-radius:14px;box-shadow:var(--shadow-pop);padding:10px 13px;
+  font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;line-height:1.4;
+  opacity:0;transform:translateX(-10px) scale(.95);transform-origin:0 80%;pointer-events:none;
+  transition:opacity .3s var(--ease),transform .42s var(--spring)}
+.pet-hint.on{opacity:1;transform:none;pointer-events:auto}
+.pet-hint::before{content:'';position:absolute;left:-5px;bottom:16px;width:11px;height:11px;transform:rotate(45deg);
+  background:var(--glass-bg);border-left:1px solid var(--glass-brd);border-bottom:1px solid var(--glass-brd)}
+.pet-hint b{color:var(--red-ink);font-weight:800}
+body[data-theme=dark] .pet-hint b,body[data-theme=midnight] .pet-hint b{color:#ff8a80}
+
+/* ============================================================= */
+/* ===== СКЕЛЕТ ЗАГРУЗКИ (первичная загрузка сессии) =========== */
+/* ============================================================= */
+#bootSkeleton{position:fixed;inset:0;z-index:95;display:flex;background:transparent;transition:opacity .42s var(--ease)}
+#bootSkeleton.fade{opacity:0;pointer-events:none}
+body.booting #authScreen{visibility:hidden}
+.sk-shimmer{background:linear-gradient(100deg,var(--surface2) 24%,var(--line) 48%,var(--surface2) 72%);
+  background-size:220% 100%;animation:skShim 1.3s linear infinite;border-radius:8px}
+@keyframes skShim{from{background-position:220% 0}to{background-position:-220% 0}}
+.sk-sb{width:var(--sbw);flex:0 0 var(--sbw);background:var(--glass-bg);
+  -webkit-backdrop-filter:blur(var(--glass-blur));backdrop-filter:blur(var(--glass-blur));
+  border-right:1px solid var(--glass-brd);padding:16px 14px;display:flex;flex-direction:column;gap:20px}
+.sk-brand{display:flex;align-items:center;gap:10px}
+.sk-logo{width:30px;height:30px;border-radius:9px;flex:0 0 30px}
+.sk-navs{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+.sk-navrow{display:flex;align-items:center;gap:10px}
+.sk-dot{width:18px;height:18px;border-radius:6px;flex:0 0 18px}
+.sk-line{height:11px;border-radius:6px;flex:1}
+.sk-shell{flex:1;min-width:0;display:flex;flex-direction:column}
+.sk-top{height:57px;border-bottom:1px solid var(--glass-brd);background:var(--glass-bg);
+  -webkit-backdrop-filter:blur(var(--glass-blur));backdrop-filter:blur(var(--glass-blur));
+  display:flex;align-items:center;padding:0 24px}
+.sk-search{width:min(420px,40%);height:34px;border-radius:10px}
+.sk-main{padding:22px 28px;max-width:1280px;width:100%;margin:0 auto}
+.sk-title{width:190px;height:26px;border-radius:8px;display:block;margin-bottom:20px}
+.sk-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin-bottom:18px}
+.sk-stat{height:96px;border-radius:14px}
+.sk-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(430px,100%),1fr));gap:14px}
+.sk-card{height:150px;border-radius:14px}
+
 </style>
 </head>
 <body>
@@ -4353,6 +4437,89 @@ function openTrSettings(){
       pupils.setAttribute('transform','translate('+(dx/d*mag).toFixed(2)+' '+(dy/d*mag).toFixed(2)+')');}
     window.addEventListener('mousemove',function(e){mx=e.clientX;my=e.clientY;if(!pend){pend=true;requestAnimationFrame(look);}},{passive:true});
   }
+})();
+
+/* ============================================================= */
+/* ===== Смарт-навигация: пет реагирует на события ============= */
+/*  Зеркалит счётчик приложения (#alertBadge, который обновляет  */
+/*  updateAlertTab при каждом renderApp) — без своей логики.     */
+/* ============================================================= */
+(function(){
+  var dock=document.getElementById('petDock'),petBtn=document.getElementById('petBtn'),
+      src=document.getElementById('alertBadge');
+  if(!dock||!petBtn)return;
+  var badge=document.createElement('span');badge.className='pet-badge';petBtn.appendChild(badge);
+  var hint=document.createElement('div');hint.className='pet-hint';dock.appendChild(hint);
+  var last=-1,hintT=null,dismissed=0;
+  function count(){try{if(typeof alertCount==='function')return alertCount()|0;}catch(e){}
+    var t=src?parseInt(src.textContent,10):0;return isNaN(t)?0:t;}
+  function word(n){try{return plur(n,'задача требует','задачи требуют','задач требуют');}catch(e){return 'задач требуют';}}
+  function goAlert(){var t=document.querySelector('.tab[data-view="alert"]');if(t)t.click();}
+  function hide(){hint.classList.remove('on');dismissed=Date.now();}
+  function showHint(n){
+    if(Date.now()-dismissed<60000)return;
+    var pnl=document.getElementById('petPanel');if(pnl&&pnl.classList.contains('open'))return;
+    if(document.body.classList.contains('noauth'))return;
+    hint.innerHTML='';var s=document.createElement('span');
+    s.innerHTML='🚨 <b>'+n+'</b> '+word(n)+' внимания';hint.appendChild(s);
+    hint.onclick=function(){hide();goAlert();};
+    hint.classList.add('on');clearTimeout(hintT);hintT=setTimeout(hide,6500);
+  }
+  function update(){
+    var n=count();
+    badge.textContent=n>99?'99+':String(n);badge.classList.toggle('on',n>0);
+    var na=dock.querySelector('.pp-nav[data-view="alert"]');
+    if(na){var nb=na.querySelector('.pp-navbadge');
+      if(n>0){if(!nb){nb=document.createElement('span');nb.className='pp-navbadge';na.appendChild(nb);}nb.textContent=n;}
+      else if(nb){nb.parentNode.removeChild(nb);}}
+    if(last>=0&&n>last)showHint(n);
+    last=n;
+  }
+  if(window.MutationObserver&&src)
+    new MutationObserver(update).observe(src,{childList:true,characterData:true,subtree:true,attributes:true});
+  update();
+  setTimeout(function(){var n=count();if(n>0&&!document.body.classList.contains('noauth')){last=0;showHint(n);last=n;}},2600);
+})();
+
+/* ============================================================= */
+/* ===== Скелет первичной загрузки ============================= */
+/*  Показывается только пока грузится сессия (вернувшийся        */
+/*  пользователь с токеном). Снимается на первом рендере,        */
+/*  при показе экрана входа или по страховочному таймауту.       */
+/* ============================================================= */
+(function(){
+  if(document.getElementById('bootSkeleton'))return;
+  var view=document.getElementById('view'),authScreen=document.getElementById('authScreen'),body=document.body;
+  if(!view)return;
+  // Показываем только при «тихом» переподключении по токену (вернувшийся
+  // пользователь): вместо простой карточки «Подключаюсь…» — премиальный
+  // скелет-каркас приложения.
+  var hasTok=false;try{hasTok=!!localStorage.getItem('place_token');}catch(e){}
+  var reconnecting=hasTok&&body.classList.contains('noauth')&&!body.classList.contains('authed');
+  if(!reconnecting)return;
+  var rows='';for(var i=0;i<6;i++)rows+='<div class="sk-navrow"><span class="sk-dot sk-shimmer"></span><span class="sk-line sk-shimmer"></span></div>';
+  var sk=document.createElement('div');sk.id='bootSkeleton';sk.setAttribute('aria-hidden','true');
+  sk.innerHTML=
+    '<div class="sk-sb"><div class="sk-brand"><span class="sk-logo sk-shimmer"></span><span class="sk-line sk-shimmer" style="max-width:90px"></span></div>'
+    +'<div class="sk-navs">'+rows+'</div></div>'
+    +'<div class="sk-shell"><div class="sk-top"><span class="sk-search sk-shimmer"></span></div>'
+    +'<div class="sk-main"><span class="sk-title sk-shimmer"></span>'
+    +'<div class="sk-stats"><span class="sk-stat sk-shimmer"></span><span class="sk-stat sk-shimmer"></span><span class="sk-stat sk-shimmer"></span></div>'
+    +'<div class="sk-cards"><span class="sk-card sk-shimmer"></span><span class="sk-card sk-shimmer"></span><span class="sk-card sk-shimmer"></span><span class="sk-card sk-shimmer"></span></div>'
+    +'</div></div>';
+  body.classList.add('booting');document.body.appendChild(sk);
+  var done=false,obs=[];
+  function finish(){if(done)return;done=true;body.classList.remove('booting');sk.classList.add('fade');
+    setTimeout(function(){if(sk.parentNode)sk.parentNode.removeChild(sk);},430);
+    obs.forEach(function(o){o.disconnect();});clearTimeout(safety);}
+  function watch(target,opts,test){if(!target||!window.MutationObserver)return;
+    var o=new MutationObserver(function(){if(test())finish();});o.observe(target,opts);obs.push(o);}
+  // успех: тело получает класс authed / #view заполнен рендером
+  watch(body,{attributes:true,attributeFilter:['class']},function(){return body.classList.contains('authed');});
+  watch(view,{childList:true},function(){return view.childNodes.length>0;});
+  // неудача: сессия отклонена — приложение перерисовывает экран входа (форма логина)
+  watch(authScreen,{childList:true,subtree:true},function(){return true;});
+  var safety=setTimeout(finish,6000);
 })();
 
 </script>
