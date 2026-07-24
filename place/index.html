@@ -1074,6 +1074,39 @@ body[data-theme=dark] .pp-nav.on .t,body[data-theme=midnight] .pp-nav.on .t{colo
 .pet-panel.open .pp-grid>*,.pet-panel.open .pp-quick>*,.pet-panel.open .pp-recent>*{animation:ppItem .4s var(--spring) forwards}
 @keyframes ppItem{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 
+/* ============================================================= */
+/* ===== ЕДИНОЕ СТЕКЛО НА ВСПЛЫВАЮЩИХ СЛОЯХ + ПЕРЕХОДЫ ========= */
+/* ============================================================= */
+/* всплывающие панели матовые над живым фоном (во всех темах) */
+.menu,.qres,.thpop{background:var(--glass-bg);
+  -webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5);
+  border-color:var(--glass-brd)}
+.toast{-webkit-backdrop-filter:blur(10px) saturate(1.4);backdrop-filter:blur(10px) saturate(1.4)}
+
+/* мягкое появление карточек при смене раздела (fill: backwards — чтобы
+   hover-подъём карточек продолжал работать после анимации) */
+@media (prefers-reduced-motion:no-preference){
+  .statgrid>.statcard{animation:cardRise .5s var(--ease) backwards}
+  .statgrid>.statcard:nth-child(1){animation-delay:.02s}
+  .statgrid>.statcard:nth-child(2){animation-delay:.07s}
+  .statgrid>.statcard:nth-child(3){animation-delay:.12s}
+  .statgrid>.statcard:nth-child(4){animation-delay:.17s}
+  .statgrid>.statcard:nth-child(5){animation-delay:.22s}
+  .pgrid>.card{animation:cardRise .46s var(--ease) backwards}
+  .pgrid>.card:nth-child(1){animation-delay:.02s}
+  .pgrid>.card:nth-child(2){animation-delay:.05s}
+  .pgrid>.card:nth-child(3){animation-delay:.08s}
+  .pgrid>.card:nth-child(4){animation-delay:.11s}
+  .pgrid>.card:nth-child(5){animation-delay:.14s}
+  .pgrid>.card:nth-child(6){animation-delay:.17s}
+}
+@keyframes cardRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* аккуратный индикатор активного раздела в сайдбаре */
+.sb-item{position:relative}
+.sb-item.active::before{content:'';position:absolute;left:-1px;top:50%;transform:translateY(-50%);
+  width:3px;height:18px;border-radius:0 3px 3px 0;background:var(--acc)}
+
 </style>
 </head>
 <body>
