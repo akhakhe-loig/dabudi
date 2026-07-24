@@ -1,9 +1,11 @@
 name: Deploy to GitHub Pages
 
 # Собирает приложение и публикует его на GitHub Pages.
-# Чтобы это заработало, репозиторий должен быть публичным
-# (либо на платном тарифе GitHub), а в Settings → Pages источник — «GitHub Actions».
-# Первый запуск включает Pages автоматически (enablement: true).
+# Что нужно один раз включить вручную, чтобы это заработало:
+#   1) Репозиторий должен быть ПУБЛИЧНЫМ (Settings → General → Change visibility),
+#      либо аккаунт на платном тарифе GitHub.
+#   2) Settings → Pages → Source (Источник) → «GitHub Actions».
+# После этого каждый пуш в ветку публикует приложение автоматически.
 
 on:
   push:
@@ -30,9 +32,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
