@@ -66,21 +66,40 @@ def run_sync(token, sheet_url, gc,
     S.headers.update({"Authorization": "Bearer " + token, "Accept": "application/json"})
 
     # ---------- сеть и разбор ответов (как в ноутбуке) ----------
+    # ВАЖНО: api_get либо возвращает разобранный ответ, либо бросает исключение.
+    # Возврат None здесь недопустим: пустой ответ выглядит для fetch_all как
+    # «страницы кончились», и выгрузка молча обрывается на середине — в таблицу
+    # уезжают заниженные числа под видом успеха.
     def api_get(path, params=None, tries=6):
+        last = None
         for a in range(tries):
             try:
                 r = S.get(BASE + path, params=params, timeout=90)
                 if r.status_code == 429 or r.status_code >= 500:
+                    last = RuntimeError("QTickets ответил HTTP %d на %s" % (r.status_code, path))
+                    if a == tries - 1: break
                     time.sleep(2 * (a + 1)); continue
                 r.raise_for_status(); return r.json()
-            except Exception:
-                if a == tries - 1: raise
+            except Exception as e:
+                last = e
+                if a == tries - 1: break
                 time.sleep(2 * (a + 1))
+        raise RuntimeError(
+            "QTickets не ответил за %d попыток на %s: %s. "
+            "Выгрузка остановлена, чтобы не записать неполные данные." % (tries, path, last)
+        )
 
     def extract(d):
         if isinstance(d, list): return d
-        if isinstance(d, dict) and isinstance(d.get("data"), list): return d["data"]
-        return []
+        # Словарь без списка в "data" — это нормальный конец пагинации
+        # ({"data": []} на странице за последней), останавливаемся тихо.
+        if isinstance(d, dict): return d["data"] if isinstance(d.get("data"), list) else []
+        # А вот всё остальное (None, строка, число) — это сбой, а не пустая
+        # страница: молча оборвать выгрузку здесь значит записать неполные числа.
+        raise RuntimeError(
+            "QTickets вернул ответ неожиданного вида (%s). "
+            "Выгрузка остановлена, чтобы не записать неполные данные." % type(d).__name__
+        )
 
     def fetch_all(path, params, label, base_pct, span_pct):
         out, page = [], 1; params = dict(params or {})
