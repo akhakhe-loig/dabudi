@@ -5,8 +5,15 @@
 // цельный source.png. Если и его нет, компонент просто ничего не рисует,
 // но приложение продолжает работать.
 
-import type { PetAssetState, PetLayerName } from "./petTypes";
-import { ASSET_DIR, LAYER_FILES, LAYER_ORDER, SOURCE_FILE } from "./petRigConfig";
+import type { PetAssetState, PetLayerName, PetSpriteName } from "./petTypes";
+import {
+  ASSET_DIR,
+  LAYER_FILES,
+  LAYER_ORDER,
+  SOURCE_FILE,
+  SPRITE_FILES,
+  SPRITE_ORDER,
+} from "./petRigConfig";
 
 /** Ошибки, о которых уже сообщили — чтобы не засорять консоль на каждый ремоунт. */
 const warned = new Set<string>();
@@ -66,8 +73,12 @@ function loadImage(url: string, signal?: AbortSignal): Promise<string | null> {
 }
 
 /**
- * Грузит слои и исходник. Возвращает состояние, пригодное для отрисовки:
- * layered — есть все слои, fallback — рисуем source.png, empty — рисовать нечего.
+ * Ищет ассеты по убыванию возможностей:
+ *
+ *   layered  — отдельные слои, руки вращаются, глаза моргают;
+ *   sprite   — три готовых кадра поз, переход кроссфейдом, без моргания;
+ *   fallback — одна цельная картинка, только движение корпуса;
+ *   empty    — рисовать нечего, но приложение работает.
  */
 export async function loadPetAssets(
   signal?: AbortSignal,
@@ -86,27 +97,51 @@ export async function loadPetAssets(
     else missing.push(name);
   }
 
+  if (signal?.aborted) {
+    return { status: "loading", layers: {}, sprites: {}, missing };
+  }
+
   if (missing.length === 0) {
-    return { status: "layered", layers, missing };
+    return { status: "layered", layers, sprites: {}, missing };
+  }
+
+  const spriteEntries = await Promise.all(
+    SPRITE_ORDER.map(async (name) => {
+      const url = await loadImage(assetUrl(SPRITE_FILES[name]), signal);
+      return [name, url] as const;
+    }),
+  );
+
+  const sprites: Partial<Record<PetSpriteName, string>> = {};
+  for (const [name, url] of spriteEntries) {
+    if (url) sprites[name] = url;
+  }
+
+  if (signal?.aborted) {
+    return { status: "loading", layers: {}, sprites: {}, missing };
+  }
+
+  if (SPRITE_ORDER.every((name) => sprites[name])) {
+    return { status: "sprite", layers: {}, sprites, missing };
   }
 
   const sourceUrl = await loadImage(assetUrl(SOURCE_FILE), signal);
 
   if (signal?.aborted) {
-    return { status: "loading", layers: {}, missing };
+    return { status: "loading", layers: {}, sprites: {}, missing };
   }
 
   if (sourceUrl) {
     warnOnce(
-      `нет слоёв: ${missing.join(", ")}. Показываю ${SOURCE_FILE} целиком — ` +
-        `руки и моргание в этом режиме не анимируются.`,
+      `нет ни полного набора слоёв, ни трёх кадров поз. Показываю ` +
+        `${SOURCE_FILE} целиком — руки и моргание в этом режиме не анимируются.`,
     );
-    return { status: "fallback", layers, sourceUrl, missing };
+    return { status: "fallback", layers, sprites, sourceUrl, missing };
   }
 
   warnOnce(
-    `не найдено ни одного изображения в /${ASSET_DIR}/. ` +
-      `Питомец не отображается; положите ${SOURCE_FILE} или полный набор слоёв.`,
+    `не найдено ни одного изображения в /${ASSET_DIR}/. Питомец не ` +
+      `отображается; положите три кадра поз, полный набор слоёв или ${SOURCE_FILE}.`,
   );
-  return { status: "empty", layers, missing };
+  return { status: "empty", layers, sprites, missing };
 }

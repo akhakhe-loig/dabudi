@@ -126,3 +126,26 @@
     will-change: auto;
   }
 }
+
+/* --- спрайтовый режим: три готовых кадра поз --- */
+.sprite {
+  opacity: 0;
+  will-change: opacity;
+}
+
+/* Мягкое пятно под лапами вместо отдельной картинки тени. */
+.shadowSoft {
+  top: auto;
+  bottom: 2%;
+  left: 22%;
+  right: 22%;
+  height: 7%;
+  width: auto;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(92 53 32 / 34%),
+    rgb(92 53 32 / 14%) 62%,
+    transparent 100%
+  );
+}

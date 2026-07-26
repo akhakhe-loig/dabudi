@@ -20,6 +20,7 @@ import type {
   PetPose,
   PetRigPose,
   PetSide,
+  PetSpriteName,
 } from "./petTypes";
 import {
   BLINK,
@@ -29,7 +30,10 @@ import {
   NEUTRAL_RIG,
   POINTER,
   POSES,
+  POSE_SPRITE,
   POSE_TRANSITION,
+  SPRITE_CROSSFADE,
+  SPRITE_ORDER,
   REDUCED_MOTION_POSE_MS,
   SHADOW,
   WAVE,
@@ -48,6 +52,8 @@ export interface PetElements {
   armRight: HTMLElement | null;
   eyes: HTMLElement | null;
   shadow: HTMLElement | null;
+  /** Спрайтовый режим: по элементу на каждый кадр позы. */
+  sprites?: Partial<Record<PetSpriteName, HTMLElement | null>>;
 }
 
 export interface AnimatorOptions {
@@ -63,6 +69,8 @@ type Timeline = (t: number, base: PetRigPose) => Partial<PetRigPose>;
 interface RunningAction {
   name: PetAction | "click";
   timeline: Timeline;
+  /** Спрайтовый режим: какой кадр показывать в этот момент действия. */
+  sprite?: (t: number) => PetSpriteName | null;
   duration: number;
   startedAt: number;
   resolve: () => void;
@@ -197,6 +205,18 @@ export class PetAnimator {
     rightOrigin: "",
   };
 
+  /**
+   * Спрайтовый режим: непрозрачность каждого кадра. Держим отдельным
+   * каналом, потому что кадры не складываются с позой — между ними идёт
+   * кроссфейд, а движение корпуса накладывается сверху на все сразу.
+   */
+  private spriteOpacity: Record<PetSpriteName, number> = {
+    up: 0,
+    middle: 0,
+    down: 0,
+  };
+  private spriteReady = false;
+
   private pendingTimers = new Set<ReturnType<typeof setTimeout>>();
   private rafId: number | null = null;
   private lastFrameAt = 0;
@@ -220,6 +240,18 @@ export class PetAnimator {
 
   attach(elements: PetElements) {
     this.elements = elements;
+    const sprites = elements.sprites;
+    const hasSprites = !!sprites && SPRITE_ORDER.some((name) => sprites[name]);
+    if (hasSprites && !this.spriteReady) {
+      // Первый показ без плавного появления: сразу нужный кадр,
+      // иначе на старте мигают все три сразу.
+      this.spriteReady = true;
+      const initial = POSE_SPRITE[this.poseName];
+      SPRITE_ORDER.forEach((name) => {
+        this.spriteOpacity[name] = name === initial ? 1 : 0;
+      });
+    }
+    if (!hasSprites) this.spriteReady = false;
     this.applyFrame(this.poseCurrent);
   }
 
@@ -335,7 +367,7 @@ export class PetAnimator {
       );
     }
     if (this.sleeping) return Promise.resolve();
-    return this.runAction(action, this.buildTimeline(action));
+    return this.runAction(action, this.buildTimeline(action), undefined, this.buildSprite(action));
   }
 
   wave(side: PetSide = "right") {
@@ -370,6 +402,7 @@ export class PetAnimator {
     name: PetAction | "click",
     timeline: Timeline,
     durationOverride?: number,
+    sprite?: (t: number) => PetSpriteName | null,
   ): Promise<void> {
     // Повторный запуск того же действия не должен оставлять питомца в
     // промежуточном состоянии: гасим предыдущее и начинаем заново с нуля.
@@ -382,6 +415,7 @@ export class PetAnimator {
       this.action = {
         name,
         timeline,
+        sprite,
         duration,
         startedAt: this.now(),
         resolve,
@@ -427,6 +461,25 @@ export class PetAnimator {
         return 620;
       default:
         return CLICK_REACTION.duration;
+    }
+  }
+
+  /**
+   * Спрайтовый режим: какой кадр показывать по ходу действия. В слоёном
+   * режиме не используется — там руки вращаются по-настоящему.
+   */
+  private buildSprite(action: PetAction): ((t: number) => PetSpriteName | null) | undefined {
+    switch (action) {
+      case "wave-left":
+      case "wave-right":
+        // Три взмаха: чередуем поднятые и опущенные лапы.
+        return (t) => (Math.floor(t * 6) % 2 === 0 ? "up" : "middle");
+      case "celebrate":
+        return (t) => (t > 0.08 && t < 0.86 ? "up" : null);
+      case "surprised":
+        return (t) => (t < 0.7 ? "up" : null);
+      default:
+        return undefined;
     }
   }
 
@@ -722,6 +775,9 @@ export class PetAnimator {
     // 4. курсор
     const pointer = this.pointerDelta();
 
+    // 5. спрайтовый кадр (в слоёном режиме канал простаивает)
+    this.advanceSprites(now, delta);
+
     const final: PetRigPose = {
       bodyX:
         this.poseCurrent.bodyX + idle.bodyX + (action.bodyX ?? 0) + pointer.bodyX,
@@ -822,6 +878,35 @@ export class PetAnimator {
     };
   }
 
+  /** Кадр, который должен быть виден сейчас: действие важнее позы. */
+  private targetSprite(now: number): PetSpriteName {
+    if (this.action?.sprite) {
+      const t = clamp((now - this.action.startedAt) / this.action.duration, 0, 1);
+      const override = this.action.sprite(t);
+      if (override) return override;
+    }
+    return POSE_SPRITE[this.poseName];
+  }
+
+  private advanceSprites(now: number, delta: number) {
+    if (!this.spriteReady) return;
+    const target = this.targetSprite(now);
+    // Кадр up ни с чем не смешивается (у него подняты лапы), поэтому любой
+    // переход с его участием делаем коротким — так меньше видно двойные лапы.
+    const involvesUp = target === "up" || this.spriteOpacity.up > 0.01;
+    const duration = this.options.reducedMotion
+      ? 1
+      : involvesUp
+        ? SPRITE_CROSSFADE.fastMs
+        : SPRITE_CROSSFADE.normalMs;
+    const step = duration <= 0 ? 1 : delta / duration;
+    SPRITE_ORDER.forEach((name) => {
+      const want = name === target ? 1 : 0;
+      const diff = want - this.spriteOpacity[name];
+      this.spriteOpacity[name] += clamp(diff, -step, step);
+    });
+  }
+
   private applyFrame(rig: PetRigPose) {
     const { figure, armLeft, armRight, eyes, shadow } = this.elements;
     const size = this.options.size;
@@ -844,6 +929,13 @@ export class PetAnimator {
     }
     if (eyes) {
       eyes.style.opacity = rig.eyesClosed.toFixed(3);
+    }
+    const sprites = this.elements.sprites;
+    if (sprites) {
+      SPRITE_ORDER.forEach((name) => {
+        const el = sprites[name];
+        if (el) el.style.opacity = this.spriteOpacity[name].toFixed(3);
+      });
     }
     if (shadow) {
       const liftNorm = clamp(-rig.bodyY / IDLE.bodyLift.max, 0, 2.5);

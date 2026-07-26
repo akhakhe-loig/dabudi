@@ -11,8 +11,7 @@
     "lint": "tsc --noEmit",
     "gen:icons": "node scripts/gen-icons.mjs",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "gen:pet": "node scripts/gen-pet-placeholder.mjs"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

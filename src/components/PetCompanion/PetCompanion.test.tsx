@@ -42,6 +42,13 @@ function mockImages(exists: (src: string) => boolean) {
 
 const allLayers = () => mockImages(() => true);
 const onlySource = () => mockImages((src) => src.includes('source.png'));
+/** Реальный набор из архива: три кадра поз, слоёв нет. */
+const onlySprites = () => mockImages((src) => src.includes('pet-arms-'));
+
+const spriteOpacity = (name: 'up' | 'middle' | 'down') =>
+  Number(
+    (screen.getByTestId(`pet-sprite-${name}`) as HTMLElement).style.opacity,
+  );
 
 function rotationOf(el: HTMLElement | null) {
   const match = el?.style.transform.match(/rotate\((-?[\d.]+)deg\)/);
@@ -124,6 +131,61 @@ describe('загрузка ассетов', () => {
   });
 });
 
+describe('спрайтовый режим (три кадра поз)', () => {
+  it('включается, когда есть три кадра и нет слоёв', async () => {
+    onlySprites();
+    render(<PetCompanion />);
+    await flushAssets();
+
+    expect(
+      screen.getByTestId('pet-companion').getAttribute('data-status'),
+    ).toBe('sprite');
+    // По умолчанию питомец стоит в спокойной позе.
+    expect(spriteOpacity('middle')).toBeCloseTo(1, 1);
+    expect(spriteOpacity('up')).toBeCloseTo(0, 1);
+    expect(spriteOpacity('down')).toBeCloseTo(0, 1);
+  });
+
+  it('смена позы перекидывает видимый кадр', async () => {
+    onlySprites();
+    const ref = createRef<PetCompanionHandle>();
+    render(<PetCompanion ref={ref} />);
+    await flushAssets();
+
+    act(() => ref.current?.setPose('arms-down'));
+    await advance(800);
+    expect(spriteOpacity('down')).toBeCloseTo(1, 1);
+    expect(spriteOpacity('middle')).toBeCloseTo(0, 1);
+
+    act(() => ref.current?.setPose('arms-up'));
+    await advance(800);
+    expect(spriteOpacity('up')).toBeCloseTo(1, 1);
+    expect(spriteOpacity('down')).toBeCloseTo(0, 1);
+  });
+
+  it('после маха возвращается к кадру прежней позы', async () => {
+    onlySprites();
+    const ref = createRef<PetCompanionHandle>();
+    render(<PetCompanion ref={ref} />);
+    await flushAssets();
+
+    act(() => ref.current?.setPose('arms-down'));
+    await advance(800);
+
+    let done = false;
+    act(() => {
+      void ref.current?.wave('right').then(() => {
+        done = true;
+      });
+    });
+    await advance(2500);
+
+    expect(done).toBe(true);
+    expect(ref.current?.getPose()).toBe('arms-down');
+    expect(spriteOpacity('down')).toBeCloseTo(1, 1);
+  });
+});
+
 describe('позы', () => {
   it('setPose("arms-down") опускает обе руки на настроенный угол', async () => {
     allLayers();
@@ -152,7 +214,6 @@ describe('действия', () => {
 
     act(() => ref.current?.setPose('arms-middle'));
     await advance(900);
-    const before = rotationOf(screen.getByTestId('pet-layer-arm-right'));
 
     let done = false;
     act(() => {
@@ -164,7 +225,12 @@ describe('действия', () => {
 
     expect(done).toBe(true);
     expect(ref.current?.getPose()).toBe('arms-middle');
-    expectAngle(rotationOf(screen.getByTestId('pet-layer-arm-right')), before);
+    // Сверяем с настроенным углом позы, а не с замером «до»: в каждом замере
+    // своё покачивание idle, и сравнение двух замеров даёт двойной разброс.
+    expectAngle(
+      rotationOf(screen.getByTestId('pet-layer-arm-right')),
+      POSES['arms-middle'].rightArmRotation,
+    );
   });
 
   it('promise действия завершается', async () => {

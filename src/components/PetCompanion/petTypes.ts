@@ -47,12 +47,25 @@ export type PetLayerName =
   | "arm-right"
   | "eyes-closed";
 
-export type PetAssetStatus = "loading" | "layered" | "fallback" | "empty";
+/** Имена спрайтовых кадров (по одному на положение лап). */
+export type PetSpriteName = "up" | "middle" | "down";
+
+export type PetAssetStatus =
+  | "loading"
+  /** Отдельные слои: тело и руки анимируются по-настоящему. */
+  | "layered"
+  /** Три готовых кадра, переход между ними кроссфейдом. */
+  | "sprite"
+  /** Одна цельная картинка. */
+  | "fallback"
+  | "empty";
 
 export interface PetAssetState {
   status: PetAssetStatus;
   /** URL каждого успешно загруженного слоя. Отсутствие ключа = слой не загрузился. */
   layers: Partial<Record<PetLayerName, string>>;
+  /** URL каждого загруженного спрайтового кадра. */
+  sprites: Partial<Record<PetSpriteName, string>>;
   /** URL исходника, если он загрузился (используется в fallback-режиме). */
   sourceUrl?: string;
   missing: PetLayerName[];

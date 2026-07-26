@@ -38,7 +38,21 @@ export default defineConfig(() => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+          // Кадры питомца весят больше, чем всё остальное приложение вместе
+          // взятое, а офлайн он не критичен. Поэтому не кладём их в стартовый
+          // предкэш, а кэшируем при первом показе — дальше он доступен офлайн.
+          globIgnores: ['**/pet/*.png'],
           navigateFallback: null,
+          runtimeCaching: [
+            {
+              urlPattern: ({url}) => url.pathname.includes('/pet/'),
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'pet-assets',
+                expiration: {maxEntries: 12},
+              },
+            },
+          ],
         },
         devOptions: {enabled: false},
       }),

@@ -18,6 +18,7 @@ import type {
   PetMachineState,
   PetPose,
   PetSide,
+  PetSpriteName,
 } from "./petTypes";
 import {
   ARM_ORIGINS,
@@ -25,6 +26,8 @@ import {
   BODY_ORIGIN,
   DRAG,
   SIZE,
+  SOURCE,
+  SPRITE_ORDER,
   clamp,
   clampSize,
 } from "./petRigConfig";
@@ -137,6 +140,7 @@ const PetCompanion = forwardRef<PetCompanionHandle, InternalProps>(
     const [assets, setAssets] = useState<PetAssetState>({
       status: "loading",
       layers: {},
+      sprites: {},
       missing: [],
     });
 
@@ -147,6 +151,7 @@ const PetCompanion = forwardRef<PetCompanionHandle, InternalProps>(
     const armRightRef = useRef<HTMLImageElement | null>(null);
     const eyesRef = useRef<HTMLImageElement | null>(null);
     const shadowRef = useRef<HTMLImageElement | null>(null);
+    const spriteRefs = useRef<Partial<Record<PetSpriteName, HTMLImageElement | null>>>({});
 
     const animator = usePetAnimator({
       size: resolvedSize,
@@ -179,6 +184,7 @@ const PetCompanion = forwardRef<PetCompanionHandle, InternalProps>(
         armRight: armRightRef.current,
         eyes: eyesRef.current,
         shadow: shadowRef.current,
+        sprites: spriteRefs.current,
       });
     }, [animator, assets.status]);
 
@@ -364,6 +370,7 @@ const PetCompanion = forwardRef<PetCompanionHandle, InternalProps>(
       .join(" ");
 
     const layered = assets.status === "layered";
+    const sprite = assets.status === "sprite";
     const fallback = assets.status === "fallback";
 
     const stage = (
@@ -421,6 +428,37 @@ const PetCompanion = forwardRef<PetCompanionHandle, InternalProps>(
                 draggable={false}
                 data-testid="pet-layer-eyes"
               />
+            </span>
+          </>
+        )}
+
+        {sprite && (
+          <>
+            {/* Тень рисуем градиентом: отдельная картинка ради мягкого
+                пятна под лапами не нужна и только утяжеляет загрузку. */}
+            <span
+              ref={(node) => {
+                shadowRef.current = node as unknown as HTMLImageElement | null;
+              }}
+              className={`${styles.layer} ${styles.shadow} ${styles.shadowSoft}`}
+              data-testid="pet-layer-shadow"
+            />
+            <span ref={figureRef} className={styles.figure}>
+              {SPRITE_ORDER.map((name) => (
+                <img
+                  key={name}
+                  ref={(node) => {
+                    spriteRefs.current[name] = node;
+                  }}
+                  className={`${styles.layer} ${styles.sprite}`}
+                  src={assets.sprites[name]}
+                  alt=""
+                  width={SOURCE.width}
+                  height={SOURCE.height}
+                  draggable={false}
+                  data-testid={`pet-sprite-${name}`}
+                />
+              ))}
             </span>
           </>
         )}

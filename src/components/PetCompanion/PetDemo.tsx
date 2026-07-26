@@ -235,6 +235,11 @@ export default function PetDemo() {
             <h2 className="text-[10px] font-black uppercase tracking-widest opacity-60">
               Калибровка
             </h2>
+            <p className="text-[11px] leading-snug opacity-60">
+              Углы рук и точки плеч действуют только в слоёном режиме — когда в
+              <code> public/pet/ </code> лежат отдельные PNG на тело и руки. На
+              трёх кадрах поз работает только размер.
+            </p>
             <Slider
               label="Размер"
               value={size}

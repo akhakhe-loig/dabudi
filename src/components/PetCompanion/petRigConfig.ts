@@ -5,20 +5,28 @@
 // (углы рук и смещение плеч), скопировать готовый JSON и вставить в
 // SOURCE, ARM_ORIGINS и POSES ниже.
 
-import type { PetLayerName, PetPose, PetRigPose } from "./petTypes";
+import type { PetLayerName, PetPose, PetRigPose, PetSpriteName } from "./petTypes";
 
-/** Система координат исходного изображения. */
+/**
+ * Система координат исходных изображений (квадрат 512×512).
+ *
+ * Питомец стоит на лапах, поэтому точка опоры для наклона и «дыхания» —
+ * внизу: так он качается от пола, а не вокруг живота.
+ *
+ * Координаты плеч и глаз нужны только слоёному режиму (отдельные PNG на
+ * тело и руки). При спрайтовых кадрах они не используются.
+ */
 export const SOURCE = {
-  width: 287,
-  height: 290,
-  /** Центр тела — вокруг него считаются наклон и «дыхание». */
-  bodyCenter: { x: 143, y: 161 },
+  width: 512,
+  height: 512,
+  /** Точка опоры: низ силуэта, чуть выше лап. */
+  bodyCenter: { x: 256, y: 452 },
   /** Плечо левой для зрителя руки. */
-  leftShoulder: { x: 88, y: 121 },
+  leftShoulder: { x: 155, y: 260 },
   /** Плечо правой для зрителя руки. */
-  rightShoulder: { x: 191, y: 121 },
-  leftEye: { x: 109, y: 103 },
-  rightEye: { x: 154, y: 104 },
+  rightShoulder: { x: 358, y: 260 },
+  leftEye: { x: 218, y: 173 },
+  rightEye: { x: 300, y: 173 },
 } as const;
 
 export const ASPECT_RATIO = `${SOURCE.width} / ${SOURCE.height}`;
@@ -42,6 +50,41 @@ export const LAYER_ORDER: PetLayerName[] = [
   "arm-right",
   "eyes-closed",
 ];
+
+/**
+ * Спрайтовый режим: три готовых кадра вместо слоёв.
+ *
+ * Кадры нарисованы отдельно, поэтому голова и лапы у них немного разной
+ * формы — «поворотом одних и тех же рук» это не является. Переход делаем
+ * кроссфейдом, и его длительность подобрана по тому, как пары смешиваются
+ * на реальном размере: middle↔down почти совпадают и переходят незаметно,
+ * а у кадра up подняты лапы, которым не с чем смешиваться — там нужен
+ * короткий переход, чтобы призрачные полупрозрачные лапы не бросались в
+ * глаза; движение корпуса его дополнительно маскирует.
+ */
+export const SPRITE_FILES: Record<PetSpriteName, string> = {
+  up: "pet-arms-up.png",
+  middle: "pet-arms-middle.png",
+  down: "pet-arms-down.png",
+};
+
+export const SPRITE_ORDER: PetSpriteName[] = ["up", "middle", "down"];
+
+/** Какой кадр показывает каждая поза. */
+export const POSE_SPRITE: Record<PetPose, PetSpriteName> = {
+  idle: "middle",
+  "arms-up": "up",
+  "arms-middle": "middle",
+  "arms-down": "down",
+  sleep: "down",
+};
+
+export const SPRITE_CROSSFADE = {
+  /** Обычный переход между похожими кадрами. */
+  normalMs: 260,
+  /** Переход с участием кадра up — быстрый, иначе видно двойные лапы. */
+  fastMs: 130,
+} as const;
 
 /**
  * Точка вращения каждой руки в процентах от габарита компонента —
