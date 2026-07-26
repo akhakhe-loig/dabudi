@@ -6,10 +6,17 @@ name: Deploy to GitHub Pages
 #      либо аккаунт на платном тарифе GitHub.
 #   2) Settings → Pages → Source (Источник) → «GitHub Actions».
 # После этого каждый пуш в ветку публикует приложение автоматически.
+#
+# Триггер намеренно широкий: раньше здесь стояла одна конкретная рабочая ветка,
+# она устарела, и сборка молча перестала запускаться — на Pages месяцами висела
+# старая версия. Публикуется та ветка, в которую пушнули последней
+# (concurrency ниже отменяет предыдущий деплой).
 
 on:
   push:
-    branches: [main, claude/ios-tutor-app-yfv1sy]
+    branches:
+      - main
+      - 'claude/**'
   workflow_dispatch:
 
 permissions:
