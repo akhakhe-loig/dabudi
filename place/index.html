@@ -1379,7 +1379,7 @@ function srvCall(action,payload){
   if(SRV_TOKEN&&!payload.token)payload.token=SRV_TOKEN;
   return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
     .then(function(r){
-      return r.json()['catch'](function(){throw new Error('Сервер вернул некорректный ответ (HTTP '+r.status+'). Проверьте, что api.php загружен и откройте api.php?action=selftest.')})
+      return r.json()['catch'](function(){throw new Error('Сервер вернул некорректный ответ (HTTP '+r.status+'). Проверьте, что api.php загружен и откройте api.php?action=selftest&key=CRON_KEY.')})
         .then(function(j){
           if(!r.ok||(j&&j.error)){
             if(j&&j.auth===false)forceRelogin();

@@ -7,8 +7,11 @@
    База: SQLite (файл), лежит вне публичной папки.
    Требования: PHP 7.4+ с расширениями pdo_sqlite и curl.
 
-   Проверка после установки (откройте в браузере):
-       https://ваш-сайт/api.php?action=selftest
+   Проверка после установки (откройте в браузере), где КЛЮЧ — это CRON_KEY
+   из config.php:
+       https://ваш-сайт/api.php?action=selftest&key=КЛЮЧ
+   Без ключа самодиагностика не отвечает: она показывает пути на сервере,
+   версии и число аккаунтов — это не то, что стоит отдавать в открытый доступ.
    ============================================================= */
 
 define('PLACE_API', 1);
@@ -19,7 +22,7 @@ ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 
 $__cfg = __DIR__ . '/config.php';
-if (!is_file($__cfg)) { pj(array('error' => 'Нет файла config.php рядом с api.php — загрузите его.'), 500); }
+if (!is_file($__cfg)) { pj(array('error' => 'Нет файла config.php рядом с api.php. Скопируйте config.sample.php в config.php и заполните его (config.php специально не хранится в репозитории — в нём секреты).'), 500); }
 require $__cfg;
 
 if (defined('PLACE_TZ') && PLACE_TZ) { @date_default_timezone_set(PLACE_TZ); }
@@ -67,7 +70,10 @@ function db() {
   try {
     $pdo = new PDO('sqlite:' . $path);
   } catch (Exception $e) {
-    perr('Не удалось открыть базу SQLite: ' . $e->getMessage() . '. Проверьте, что включено расширение pdo_sqlite.', 500);
+    /* Текст ошибки PDO содержит абсолютный путь к базе — наружу его не отдаём,
+       он уходит в лог хостинга. Подробности видит selftest (он под ключом). */
+    error_log('place: не удалось открыть базу SQLite (' . $path . '): ' . $e->getMessage());
+    perr('Не удалось открыть базу данных. Проверьте, что включено расширение pdo_sqlite, и запустите самодиагностику: api.php?action=selftest&key=CRON_KEY', 500);
   }
   $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
   $pdo->exec('PRAGMA journal_mode=WAL');
@@ -117,6 +123,36 @@ function first_run($pdo) {
 /* ================= АУТЕНТИФИКАЦИЯ ================= */
 
 function client_ip() { return isset($_SERVER['REMOTE_ADDR']) ? substr((string)$_SERVER['REMOTE_ADDR'], 0, 45) : 'cli'; }
+
+/* ---- Ключ для cron и самодиагностики ----
+   Стандартный ключ из config.php считаем НЕзаданным: он лежит в открытом
+   репозитории, и если его не сменили — запуск по ссылке должен быть закрыт,
+   а не защищён общеизвестной строкой. Та же логика, что у INITIAL_ADMIN_PASS:
+   лучше честно не работать, чем работать «в открытую». */
+define('CRON_KEY_DEFAULT', 'смените-этот-ключ-на-случайный');
+
+function cron_key_ready() {
+  if (!defined('CRON_KEY')) return false;
+  $k = (string)CRON_KEY;
+  return ($k !== '' && $k !== CRON_KEY_DEFAULT && mb_strlen($k) >= 20);
+}
+function cron_key_ok($key) {
+  if (!cron_key_ready()) return false;
+  return is_string($key) && $key !== '' && hash_equals((string)CRON_KEY, $key);
+}
+/* Отказ с понятной причиной: админу надо знать, что дело в незаполненном
+   config.php, а не в опечатке в ссылке. */
+function cron_key_deny() {
+  if (!cron_key_ready()) {
+    perr('CRON_KEY в config.php не задан или остался стандартным. Впишите свою случайную строку от 20 символов — пока её нет, запуск по ссылке и самодиагностика закрыты.', 403);
+  }
+  perr('Неверный ключ.', 403);
+}
+
+function req_key($in) {
+  if (isset($_GET['key'])) return (string)$_GET['key'];
+  return isset($in['key']) ? (string)$in['key'] : '';
+}
 
 function rate_check($login) {
   $d = db(); $now = now_ms();
@@ -438,6 +474,7 @@ function selftest() {
   catch (Exception $e) { $add('Запись в базу работает', false, $e->getMessage()); }
   $add('Хэширование паролей (bcrypt)', is_string(password_hash('test', PASSWORD_DEFAULT)));
   $add('HTTPS включён', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https'), 'если нет — включите SSL в панели хостинга');
+  $add('CRON_KEY задан свой', cron_key_ready(), cron_key_ready() ? 'отлично' : 'впишите в config.php случайную строку от 20 символов — иначе запуск заданий по ссылке закрыт');
   $ws = ws_status_arr();
   $add('Wordstat настроен (можно позже)', $ws['tokenSet'], $ws['tokenSet'] ? ('режим: ' . $ws['mode']) : 'заполните WORDSTAT_MODE и WORDSTAT_TOKEN в config.php');
   $allCritical = true;
@@ -460,8 +497,7 @@ if (PHP_SAPI === 'cli') {
    Из веба (не из CLI) обёртки работают только с верным ?key=CRON_KEY. */
 if (defined('PLACE_CRON')) {
   if (PHP_SAPI !== 'cli') {
-    $k = isset($_GET['key']) ? (string)$_GET['key'] : '';
-    if ($k === '' || !defined('CRON_KEY') || !hash_equals(CRON_KEY, $k)) perr('Запуск cron из браузера — только с ?key=CRON_KEY из config.php.', 403);
+    if (!cron_key_ok(isset($_GET['key']) ? (string)$_GET['key'] : '')) cron_key_deny();
   }
   if (PLACE_CRON === 'wordstat') pj(ws_collect());
   if (PLACE_CRON === 'backup')  pj(do_backup());
@@ -518,11 +554,22 @@ switch ($action) {
 
   case 'ping': pj(array('ok' => 1, 'app' => 'place', 'version' => PLACE_VERSION));
 
-  case 'selftest': selftest();
+  case 'selftest': {
+    /* Ключ проверяем ПЕРВЫМ: он не трогает базу, поэтому самодиагностика
+       остаётся рабочей даже когда база не открывается — ровно тот случай,
+       ради которого её и открывают. Вход админом — запасной путь. */
+    if (!cron_key_ok(req_key($in))) {
+      $u = auth_user(isset($in['token']) ? $in['token'] : '');
+      if (!$u || $u['role'] !== 'admin') {
+        if (!cron_key_ready()) cron_key_deny();
+        perr('Самодиагностика доступна администратору: добавьте к ссылке ?key=КЛЮЧ (это CRON_KEY из config.php) или войдите в кабинет админом.', 403);
+      }
+    }
+    selftest();
+  }
 
   case 'cron': {
-    $key = isset($_GET['key']) ? (string)$_GET['key'] : (isset($in['key']) ? (string)$in['key'] : '');
-    if (!defined('CRON_KEY') || $key === '' || !hash_equals(CRON_KEY, $key)) perr('Неверный ключ cron.', 403);
+    if (!cron_key_ok(req_key($in))) cron_key_deny();
     $job = isset($_GET['job']) ? (string)$_GET['job'] : (isset($in['job']) ? (string)$in['job'] : '');
     if ($job === 'wordstat') pj(ws_collect());
     if ($job === 'backup')  pj(do_backup());
@@ -567,6 +614,10 @@ switch ($action) {
   }
 
   case 'save_trends': {
+    /* Намеренно require_auth, а не require_admin (в отличие от save_digest):
+       Отслежиратор — общая доска, её правят все сотрудники. Сюда прилетает
+       не только список фраз, но и состояние интерфейса (выбранный период,
+       фильтр) — под админом раздел просто перестанет работать у остальных. */
     $u = require_auth($in);
     if (!isset($in['trends']) || !is_array($in['trends'])) perr('Нет данных трендов.');
     shared_set('trends', $in['trends']);
@@ -662,7 +713,9 @@ switch ($action) {
 
   case 'export_all': {
     require_admin($in);
-    $users = db()->query('SELECT * FROM users')->fetchAll(PDO::FETCH_ASSOC);
+    /* Явный список колонок: pass_hash в выгрузку не попадает. Файл экспорта
+       уезжает в почту и облака, хэши паролей там ни к чему. */
+    $users = db()->query('SELECT id,login,name,role,created FROM users')->fetchAll(PDO::FETCH_ASSOC);
     $data = db()->query('SELECT * FROM userdata')->fetchAll(PDO::FETCH_ASSOC);
     foreach ($data as &$d) { $d['json'] = json_decode($d['json'], true); }
     unset($d);

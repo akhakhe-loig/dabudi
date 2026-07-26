@@ -7,3 +7,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Боевые настройки Place: пароль первого админа, токен Wordstat, CRON_KEY,
+# ключ Qtickets. Репозиторий публичный — этот файл живёт только на хостинге.
+# Шаблон для заполнения: place/config.sample.php
+place/config.php
+place/place-data/
