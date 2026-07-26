@@ -30,29 +30,34 @@ const RIGHT_SHOULDER = { x: 191, y: 121 };
 const LEFT_EYE = { x: 109, y: 103 };
 const RIGHT_EYE = { x: 154, y: 104 };
 
+// Палитра снята с фотографий игрушки: тёплый абрикосовый мех, кремовый
+// комбинезон, тёмно-коричневые глаза и нос, белое кружево.
 const C = {
-  caramel: '#E0A868',
-  caramelDk: '#C08347',
-  cream: '#F0DCA2',
-  muzzle: '#FCF8EE',
-  cocoa: '#3A2A1C',
-  bead: '#241811',
+  fur: '#EFC182',
+  furDk: '#DCA463',
+  furLt: '#F6D5A2',
+  cream: '#F1EDBE',
+  creamDk: '#E4DEA6',
+  nose: '#5C3520',
+  eye: '#452812',
+  lace: '#FFFFFF',
 };
 
-const HEAD = { x: (LEFT_EYE.x + RIGHT_EYE.x) / 2, y: 112, r: 52 };
+const HEAD = { x: (LEFT_EYE.x + RIGHT_EYE.x) / 2 + 1.5, y: 94, r: 48 };
 
 /**
- * Рука-лозенг: нижний конец в плече, сама уходит вверх и наружу примерно
- * на 45° — та же поза «ура», что на исходной фотографии. Именно от неё
- * отсчитываются углы поз в petRigConfig.ts.
+ * Лапа: нижний конец в плече, сама уходит вверх и наружу — поза «ура»
+ * с первой фотографии. Именно от неё отсчитываются углы поз в
+ * petRigConfig.ts, поэтому трогать её положение без пересчёта углов нельзя.
  */
 function arm(shoulder, dir) {
-  const tip = { x: shoulder.x + dir * -46, y: 74 };
+  const tip = { x: shoulder.x + dir * -30, y: 60 };
   const cx = (shoulder.x + tip.x) / 2;
   const cy = (shoulder.y + tip.y) / 2;
   const angle = (Math.atan2(tip.x - shoulder.x, shoulder.y - tip.y) * 180) / Math.PI;
-  return `<rect x="${cx - 17}" y="${cy - 37}" width="34" height="74" rx="17"
-    fill="${C.cream}" transform="rotate(${angle} ${cx} ${cy})"/>`;
+  const h = Math.hypot(tip.x - shoulder.x, tip.y - shoulder.y) + 26;
+  return `<rect x="${cx - 13}" y="${cy - h / 2}" width="26" height="${h}" rx="13"
+    fill="${C.fur}" transform="rotate(${angle} ${cx} ${cy})"/>`;
 }
 
 const ARM_LEFT = arm(LEFT_SHOULDER, 1);
@@ -60,38 +65,59 @@ const ARM_RIGHT = arm(RIGHT_SHOULDER, -1);
 
 const SHADOW = `
   <defs><filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
-    <feGaussianBlur stdDeviation="7"/></filter></defs>
-  <ellipse cx="143" cy="268" rx="62" ry="13" fill="#3A2A1C" opacity=".28" filter="url(#blur)"/>`;
+    <feGaussianBlur stdDeviation="6"/></filter></defs>
+  <ellipse cx="143" cy="276" rx="56" ry="11" fill="#5C3520" opacity=".26" filter="url(#blur)"/>`;
+
+/** Кружевной воротник: белая манишка с фестонами по нижнему краю. */
+const collar = () => {
+  const bumps = [];
+  for (let i = 0; i <= 8; i += 1) {
+    const t = i / 8;
+    const x = 104 + t * 58;
+    const y = 165 + Math.sin(t * Math.PI) * 7;
+    bumps.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5.6" fill="${C.lace}"/>`);
+  }
+  return `<ellipse cx="133" cy="158" rx="33" ry="12.5" fill="${C.lace}"/>${bumps.join('')}`;
+};
 
 const BODY = `
-  <ellipse cx="143" cy="205" rx="58" ry="62" fill="${C.cream}"/>
-  <ellipse cx="${HEAD.x - 47}" cy="118" rx="19" ry="33" fill="${C.caramelDk}"
-    transform="rotate(-13 ${HEAD.x - 47} 118)"/>
-  <ellipse cx="${HEAD.x + 47}" cy="118" rx="19" ry="33" fill="${C.caramelDk}"
-    transform="rotate(13 ${HEAD.x + 47} 118)"/>
-  <circle cx="${HEAD.x}" cy="${HEAD.y}" r="${HEAD.r}" fill="${C.caramel}"/>
-  <ellipse cx="${HEAD.x - 17}" cy="${HEAD.y - 27}" rx="21" ry="13" fill="#fff" opacity=".22"
-    transform="rotate(-18 ${HEAD.x - 17} ${HEAD.y - 27})"/>
-  <ellipse cx="${HEAD.x}" cy="136" rx="32" ry="24" fill="${C.muzzle}"/>
-  <path d="M${HEAD.x} 118c7.6 0 12.4 3.7 12.4 8.4 0 5.4-6.4 9.8-12.4 9.8s-12.4-4.4-12.4-9.8c0-4.7 4.8-8.4 12.4-8.4z"
-    fill="${C.cocoa}"/>
-  <path d="M${HEAD.x - 13} 141c3.7 4.7 7.8 7.1 13 7.1s9.3-2.4 13-7.1"
-    stroke="${C.cocoa}" stroke-width="4" stroke-linecap="round" fill="none" opacity=".75"/>
-  <circle cx="${LEFT_EYE.x}" cy="${LEFT_EYE.y}" r="10.5" fill="${C.bead}"/>
-  <circle cx="${RIGHT_EYE.x}" cy="${RIGHT_EYE.y}" r="10.5" fill="${C.bead}"/>
-  <circle cx="${LEFT_EYE.x - 3.4}" cy="${LEFT_EYE.y - 3.8}" r="3.9" fill="#fff" opacity=".92"/>
-  <circle cx="${RIGHT_EYE.x - 3.4}" cy="${RIGHT_EYE.y - 3.8}" r="3.9" fill="#fff" opacity=".92"/>
-  <path d="M112 172h62c0 19-10.5 29-31 29s-31-10-31-29z" fill="#fff"/>
-  <circle cx="143" cy="188" r="9" fill="#5B7CFA"/>`;
+  <!-- лапки -->
+  <ellipse cx="121" cy="264" rx="19" ry="14" fill="${C.fur}"/>
+  <ellipse cx="165" cy="264" rx="19" ry="14" fill="${C.fur}"/>
+  <!-- туловище в кремовом комбинезоне -->
+  <ellipse cx="143" cy="206" rx="54" ry="61" fill="${C.cream}"/>
+  <ellipse cx="120" cy="190" rx="24" ry="28" fill="#fff" opacity=".18"/>
+  <!-- висячие уши: рисуются до головы, чтобы их верх ушёл под неё -->
+  <ellipse cx="98" cy="110" rx="20" ry="42" fill="${C.furDk}"
+    transform="rotate(-9 98 110)"/>
+  <ellipse cx="${HEAD.x * 2 - 98}" cy="110" rx="20" ry="42" fill="${C.furDk}"
+    transform="rotate(9 ${HEAD.x * 2 - 98} 110)"/>
+  <!-- голова -->
+  <circle cx="${HEAD.x}" cy="${HEAD.y}" r="${HEAD.r}" fill="${C.fur}"/>
+  <ellipse cx="${HEAD.x - 16}" cy="${HEAD.y - 26}" rx="20" ry="12" fill="${C.furLt}" opacity=".75"
+    transform="rotate(-18 ${HEAD.x - 16} ${HEAD.y - 26})"/>
+  <!-- морда: у игрушки она чуть светлее меха, без резкого белого пятна -->
+  <ellipse cx="${HEAD.x - 1.5}" cy="124" rx="27" ry="20" fill="${C.furLt}" opacity=".85"/>
+  <!-- глаза: тёмно-коричневые, с бликом слева сверху -->
+  <circle cx="${LEFT_EYE.x}" cy="${LEFT_EYE.y}" r="11.5" fill="${C.eye}"/>
+  <circle cx="${RIGHT_EYE.x}" cy="${RIGHT_EYE.y}" r="11.5" fill="${C.eye}"/>
+  <circle cx="${LEFT_EYE.x - 3.6}" cy="${LEFT_EYE.y - 4.2}" r="3.6" fill="#fff" opacity=".95"/>
+  <circle cx="${RIGHT_EYE.x - 3.6}" cy="${RIGHT_EYE.y - 4.2}" r="3.6" fill="#fff" opacity=".95"/>
+  <!-- нос и рот -->
+  <path d="M${HEAD.x - 1.5} 116c6.4 0 10.4 3 10.4 6.9 0 4.5-5.4 8.1-10.4 8.1s-10.4-3.6-10.4-8.1c0-3.9 4-6.9 10.4-6.9z"
+    fill="${C.nose}"/>
+  <path d="M${HEAD.x - 13} 134c3.5 4 7.3 6 11.5 6s8-2 11.5-6"
+    stroke="${C.nose}" stroke-width="3.4" stroke-linecap="round" fill="none" opacity=".8"/>
+  ${collar()}`;
 
-// Слой закрытых глаз: перекрывает бусины цветом головы и рисует дуги.
+// Слой закрытых глаз: перекрывает глаза цветом меха и рисует дуги.
 const EYES_CLOSED = `
-  <circle cx="${LEFT_EYE.x}" cy="${LEFT_EYE.y}" r="13" fill="${C.caramel}"/>
-  <circle cx="${RIGHT_EYE.x}" cy="${RIGHT_EYE.y}" r="13" fill="${C.caramel}"/>
-  <path d="M${LEFT_EYE.x - 9} ${LEFT_EYE.y - 1}c3.4 5 14.6 5 18 0"
-    stroke="${C.bead}" stroke-width="4.4" stroke-linecap="round" fill="none"/>
-  <path d="M${RIGHT_EYE.x - 9} ${RIGHT_EYE.y - 1}c3.4 5 14.6 5 18 0"
-    stroke="${C.bead}" stroke-width="4.4" stroke-linecap="round" fill="none"/>`;
+  <circle cx="${LEFT_EYE.x}" cy="${LEFT_EYE.y}" r="13.5" fill="${C.fur}"/>
+  <circle cx="${RIGHT_EYE.x}" cy="${RIGHT_EYE.y}" r="13.5" fill="${C.fur}"/>
+  <path d="M${LEFT_EYE.x - 9.5} ${LEFT_EYE.y - 1.5}c3.6 5.4 15.4 5.4 19 0"
+    stroke="${C.eye}" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M${RIGHT_EYE.x - 9.5} ${RIGHT_EYE.y - 1.5}c3.6 5.4 15.4 5.4 19 0"
+    stroke="${C.eye}" stroke-width="4" stroke-linecap="round" fill="none"/>`;
 
 const layers = [
   { file: 'shadow.png', content: SHADOW },
