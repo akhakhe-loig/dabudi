@@ -4,7 +4,7 @@ import {
   TrendingUp, Calendar, AlertCircle, MessageCircle, ArrowRight, Check 
 } from "lucide-react";
 import { Student, Lesson, Task, Payment } from "../types";
-import { lessonsWord } from "../utils";
+import { lessonsWord, waPhone } from "../utils";
 
 interface HomeTabProps {
   students: Student[];
@@ -62,12 +62,17 @@ export default function HomeTab({
            !l.isCancelled;
   }).sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
-  // Find upcoming lesson (not completed, in future or starting soon)
-  const upcomingLesson = lessons.find(l => {
-    const lTime = new Date(l.dateTime).getTime();
-    const now = new Date().getTime();
-    return !l.isCompleted && !l.isCancelled && (lTime + l.durationMinutes * 60 * 1000) > now;
-  });
+  // Find upcoming lesson (not completed, in future or starting soon).
+  // Сортировка обязательна: уроки лежат в порядке добавления, поэтому .find()
+  // брал первый созданный, а не ближайший по времени — карточка показывала
+  // урок следующего месяца вместо сегодняшнего.
+  const upcomingLesson = lessons
+    .filter(l => {
+      const lTime = new Date(l.dateTime).getTime();
+      const now = new Date().getTime();
+      return !l.isCompleted && !l.isCancelled && (lTime + l.durationMinutes * 60 * 1000) > now;
+    })
+    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())[0];
 
   const getStudentForLesson = (studentId: string) => {
     return students.find(s => s.id === studentId);
@@ -204,7 +209,8 @@ export default function HomeTab({
           activeDarkMode ? "bg-[#2C2C2E] border-[#3A3A3C] text-neutral-400" : "bg-white border-[#E5E5EA] text-neutral-500"
         }`}>
           <Calendar size={28} className="mx-auto opacity-50 mb-2" />
-          <p className="text-xs font-semibold">На сегодня занятий больше нет</p>
+          {/* Карточка смотрит на все будущие уроки, а не только на сегодняшние */}
+          <p className="text-xs font-semibold">Впереди нет запланированных занятий</p>
           <button 
             onClick={() => onOpenSheet("addLesson")}
             className="text-[11px] font-bold text-blue-500 mt-1 hover:underline"
@@ -392,22 +398,27 @@ export default function HomeTab({
                   if (!s) return null;
                   const dateStr = new Date(ul.dateTime).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
                   const amount = (ul.durationMinutes / 60) * s.hourlyRate;
+                  // Номер чистим до цифр — со скобками и пробелами ссылка wa.me
+                  // не открывается. Нет цифр — кнопку не показываем вовсе.
+                  const wa = waPhone(s.phone);
                   return (
                     <div key={ul.id} className="flex items-center justify-between text-[10px] bg-neutral-500/5 p-1.5 rounded-lg border border-neutral-500/10">
                       <span className="font-bold">{s.name} ({dateStr})</span>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold">{amount} ₽</span>
-                        <a 
-                          href={`https://wa.me/${s.phone}?text=${encodeURIComponent(
-                            `Здравствуйте, ${s.name}! Напоминаю об оплате занятия от ${dateStr} на сумму ${amount} руб. Спасибо!`
-                          )}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500"
-                          title="Напомнить в WhatsApp"
-                        >
-                          <MessageCircle size={10} />
-                        </a>
+                        <span className="font-bold">{amount.toLocaleString("ru-RU")} ₽</span>
+                        {wa && (
+                          <a
+                            href={`https://wa.me/${wa}?text=${encodeURIComponent(
+                              `Здравствуйте, ${s.name}! Напоминаю об оплате занятия от ${dateStr} на сумму ${amount} руб. Спасибо!`
+                            )}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500"
+                            title="Напомнить в WhatsApp"
+                          >
+                            <MessageCircle size={10} />
+                          </a>
+                        )}
                       </div>
                     </div>
                   );

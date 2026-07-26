@@ -27,63 +27,84 @@ export default function FinancesTab({
     return students.find(s => s.id === studentId);
   };
 
+  const costOf = (l: Lesson) => {
+    const s = getStudentForId(l.studentId);
+    return s ? s.hourlyRate * (l.durationMinutes / 60) : 0;
+  };
+
+  // Граница выбранного периода: неделя — с понедельника, месяц — с 1-го числа,
+  // год — с 1 января. Раньше переключатель наверху не влиял ни на что: цифры
+  // считались за всё время, а график был нарисован захардкоженными числами.
+  const periodStart = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    if (financePeriod === "week") {
+      d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Пн = начало недели
+    } else if (financePeriod === "month") {
+      d.setDate(1);
+    } else {
+      d.setMonth(0, 1);
+    }
+    return d.getTime();
+  })();
+
+  const inPeriod = (iso: string) => {
+    const t = new Date(iso).getTime();
+    return Number.isFinite(t) && t >= periodStart;
+  };
+
   // 1. Calculations
   const completedLessons = lessons.filter(l => l.isCompleted && !l.isCancelled);
-  const paidLessons = completedLessons.filter(l => l.isPaid);
+  const periodLessons = completedLessons.filter(l => inPeriod(l.dateTime));
+
+  // Долги — сознательно за ВСЁ время, а не за период: неоплаченный урок
+  // остаётся долгом независимо от того, когда он прошёл, и прятать старые
+  // задолженности при переключении на «Неделю» было бы вредно.
   const unpaidLessons = completedLessons.filter(l => !l.isPaid);
 
-  const totalRevenue = payments.filter(p => p.isReceived).reduce((sum, p) => sum + p.amount, 0);
-  
-  const totalDebt = unpaidLessons.reduce((sum, l) => {
-    const s = getStudentForId(l.studentId);
-    return sum + (s ? s.hourlyRate * (l.durationMinutes / 60) : 0);
-  }, 0);
+  const periodPayments = payments.filter(p => p.isReceived && inPeriod(p.date));
 
-  const averageTicket = completedLessons.length > 0 
-    ? Math.round(completedLessons.reduce((sum, l) => {
-        const s = getStudentForId(l.studentId);
-        return sum + (s ? s.hourlyRate * (l.durationMinutes / 60) : 0);
-      }, 0) / completedLessons.length)
+  const totalRevenue = periodPayments.reduce((sum, p) => sum + p.amount, 0);
+  const totalDebt = unpaidLessons.reduce((sum, l) => sum + costOf(l), 0);
+
+  const averageTicket = periodLessons.length > 0
+    ? Math.round(periodLessons.reduce((sum, l) => sum + costOf(l), 0) / periodLessons.length)
     : 0;
 
-  // Mock data points for SVG charts
-  const weekData = [
-    { label: "Пн", value: 3000 },
-    { label: "Вт", value: 4500 },
-    { label: "Ср", value: 1500 },
-    { label: "Чт", value: 6000 },
-    { label: "Пт", value: 3000 },
-    { label: "Сб", value: 7500 },
-    { label: "Вс", value: 0 }
-  ];
-
-  const monthData = [
-    { label: "Неделя 1", value: 18000 },
-    { label: "Неделя 2", value: 24500 },
-    { label: "Неделя 3", value: 21000 },
-    { label: "Неделя 4", value: 29000 }
-  ];
-
-  const yearData = [
-    { label: "Янв-Мар", value: 54000 },
-    { label: "Апр-Июн", value: 68000 },
-    { label: "Июл-Сен", value: 42000 },
-    { label: "Окт-Дек", value: 89000 }
-  ];
-
-  const chartData = financePeriod === "week" 
-    ? weekData 
-    : financePeriod === "month" 
-      ? monthData 
-      : yearData;
+  // График строится из реально полученных оплат внутри выбранного периода.
+  const chartData = (() => {
+    const now = new Date();
+    if (financePeriod === "week") {
+      const buckets = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(label => ({ label, value: 0 }));
+      periodPayments.forEach(p => {
+        buckets[(new Date(p.date).getDay() + 6) % 7].value += p.amount;
+      });
+      return buckets;
+    }
+    if (financePeriod === "month") {
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const weeks = Math.ceil(daysInMonth / 7);
+      const buckets = Array.from({ length: weeks }, (_, i) => ({ label: `Неделя ${i + 1}`, value: 0 }));
+      periodPayments.forEach(p => {
+        const idx = Math.min(weeks - 1, Math.floor((new Date(p.date).getDate() - 1) / 7));
+        buckets[idx].value += p.amount;
+      });
+      return buckets;
+    }
+    const quarters = ["Янв-Мар", "Апр-Июн", "Июл-Сен", "Окт-Дек"].map(label => ({ label, value: 0 }));
+    periodPayments.forEach(p => {
+      quarters[Math.floor(new Date(p.date).getMonth() / 3)].value += p.amount;
+    });
+    return quarters;
+  })();
 
   const maxVal = Math.max(...chartData.map(d => d.value)) || 1;
 
   // Combined ledger (payments log + pending debts log)
   const billingLedger: { id: string; studentName: string; subject: string; date: string; amount: number; isPaid: boolean; type: "lesson" | "payment" }[] = [];
 
-  // Add payments received
-  payments.forEach(p => {
+  // Оплаты — за выбранный период
+  periodPayments.forEach(p => {
     const s = getStudentForId(p.studentId);
     if (s) {
       billingLedger.push({
@@ -98,7 +119,7 @@ export default function FinancesTab({
     }
   });
 
-  // Add unpaid debts
+  // Долги — все непогашенные, вне зависимости от периода
   unpaidLessons.forEach(l => {
     const s = getStudentForId(l.studentId);
     if (s) {
@@ -107,7 +128,7 @@ export default function FinancesTab({
         studentName: s.name,
         subject: s.subject,
         date: l.dateTime,
-        amount: s.hourlyRate * (l.durationMinutes / 60),
+        amount: costOf(l),
         isPaid: false,
         type: "lesson"
       });
@@ -161,7 +182,9 @@ export default function FinancesTab({
           <div className="flex justify-between items-center mb-3">
             <span className="text-[10px] font-bold uppercase opacity-60 text-neutral-400">График Доходов</span>
             <span className="text-xs font-black text-emerald-500">
-              {chartHoveredIdx !== null ? `${chartData[chartHoveredIdx].value} ₽` : "Коснитесь столбца"}
+              {chartHoveredIdx !== null && chartData[chartHoveredIdx]
+                ? `${chartData[chartHoveredIdx].value.toLocaleString("ru-RU")} ₽`
+                : "Коснитесь столбца"}
             </span>
           </div>
 
@@ -212,7 +235,7 @@ export default function FinancesTab({
           <div className={`p-3 rounded-xl border text-center ${
             activeDarkMode ? "bg-[#2C2C2E] border-[#3A3A3C] text-white" : "bg-white border-[#E5E5EA]"
           }`}>
-            <span className="text-[8px] opacity-65 uppercase tracking-wide block font-semibold mb-1">Долги</span>
+            <span className="text-[8px] opacity-65 uppercase tracking-wide block font-semibold mb-1">Долги · всего</span>
             <span className="text-xs font-black tracking-tight text-amber-500">{totalDebt.toLocaleString()} ₽</span>
           </div>
 
@@ -297,7 +320,11 @@ export default function FinancesTab({
               ))}
             </div>
           ) : (
-            <p className="text-xs text-center py-5 opacity-65">Записи в журнале оплат за выбранный период отсутствуют.</p>
+            <p className="text-xs text-center py-5 opacity-65">
+              {filterType === "unpaid"
+                ? "Долгов нет — все проведённые занятия оплачены."
+                : "Оплат за выбранный период пока нет."}
+            </p>
           )}
         </div>
 

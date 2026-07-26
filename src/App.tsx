@@ -211,45 +211,43 @@ export default function App() {
   const [showAddLessonSheet, setShowAddLessonSheet] = useState(false);
   const [showAddPaymentSheet, setShowAddPaymentSheet] = useState(false);
 
+  // Sync state triggers
+  const saveState = (key: string, data: any) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch {
+      // Переполнено хранилище или приватный режим: данные доживут до конца
+      // сессии в памяти, но падать на каждом действии приложение не должно.
+      console.warn(`Не удалось сохранить «${key}» в localStorage`);
+    }
+  };
+
   // 1. Local Storage initialization
   useEffect(() => {
-    const cachedStudents = localStorage.getItem("tutor_crm_students");
-    const cachedLessons = localStorage.getItem("tutor_crm_lessons");
-    const cachedPayments = localStorage.getItem("tutor_crm_payments");
-    const cachedNotes = localStorage.getItem("tutor_crm_notes");
-    const cachedTasks = localStorage.getItem("tutor_crm_tasks");
+    // Повреждённый ключ (оборванная запись, чужие данные, ручная правка) не
+    // должен ронять приложение: раньше исключение из JSON.parse летело при
+    // каждом монтировании, и пользователь получал белый экран навсегда.
+    // Здесь такой ключ откатывается на демо-данные и перезаписывается.
+    const load = <T,>(key: string, initial: () => T[]): T[] => {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw !== null) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed as T[];
+        }
+      } catch {
+        console.warn(`Ключ «${key}» повреждён — восстанавливаю демо-данные`);
+      }
+      const value = initial();
+      saveState(key, value);
+      return value;
+    };
 
-    if (cachedStudents) setStudents(JSON.parse(cachedStudents));
-    else {
-      setStudents(INITIAL_STUDENTS);
-      localStorage.setItem("tutor_crm_students", JSON.stringify(INITIAL_STUDENTS));
-    }
-
-    if (cachedLessons) setLessons(JSON.parse(cachedLessons));
-    else {
-      const initL = INITIAL_LESSONS();
-      setLessons(initL);
-      localStorage.setItem("tutor_crm_lessons", JSON.stringify(initL));
-    }
-
-    if (cachedPayments) setPayments(JSON.parse(cachedPayments));
-    else {
-      setPayments(INITIAL_PAYMENTS);
-      localStorage.setItem("tutor_crm_payments", JSON.stringify(INITIAL_PAYMENTS));
-    }
-
-    if (cachedNotes) setNotes(JSON.parse(cachedNotes));
-    else {
-      setNotes(INITIAL_NOTES);
-      localStorage.setItem("tutor_crm_notes", JSON.stringify(INITIAL_NOTES));
-    }
-
-    if (cachedTasks) setTasks(JSON.parse(cachedTasks));
-    else {
-      const initT = INITIAL_TASKS();
-      setTasks(initT);
-      localStorage.setItem("tutor_crm_tasks", JSON.stringify(initT));
-    }
+    setStudents(load<Student>("tutor_crm_students", () => INITIAL_STUDENTS));
+    setLessons(load<Lesson>("tutor_crm_lessons", INITIAL_LESSONS));
+    setPayments(load<Payment>("tutor_crm_payments", () => INITIAL_PAYMENTS));
+    setNotes(load<Note>("tutor_crm_notes", () => INITIAL_NOTES));
+    setTasks(load<Task>("tutor_crm_tasks", INITIAL_TASKS));
   }, []);
 
   // Загрузка настроек внешнего вида
@@ -266,7 +264,7 @@ export default function App() {
 
   // Сохранение настроек внешнего вида
   useEffect(() => {
-    localStorage.setItem("tutor_crm_theme", JSON.stringify(theme));
+    saveState("tutor_crm_theme", theme);
   }, [theme]);
 
   // Применение акцентного цвета и скругления к :root — переопределяет
@@ -279,11 +277,6 @@ export default function App() {
     root.style.setProperty("--radius", getRadiusValue(theme.radius));
     root.classList.toggle("dark", theme.dark);
   }, [theme.accent, theme.radius, theme.dark]);
-
-  // Sync state triggers
-  const saveState = (key: string, data: any) => {
-    localStorage.setItem(key, JSON.stringify(data));
-  };
 
   // 2. State Actions handlers
   const handleAddStudent = (newS: Omit<Student, "id">) => {

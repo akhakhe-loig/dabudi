@@ -11,3 +11,13 @@ export function plural(n: number, forms: [string, string, string]): string {
 
 export const lessonsWord = (n: number) => plural(n, ["урок", "урока", "уроков"]);
 export const studentsWord = (n: number) => plural(n, ["ученик", "ученика", "учеников"]);
+
+// Телефон для ссылки wa.me: сервису нужны только цифры в международном формате.
+// Записанный человеком номер («+7 (916) 123-45-67») ломает ссылку пробелами и
+// скобками, поэтому чистим. Российские номера через 8 приводим к 7.
+// Возвращает "" — значит ссылку показывать нечему.
+export function waPhone(phone: string): string {
+  const digits = (phone || "").replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("8")) return "7" + digits.slice(1);
+  return digits;
+}
