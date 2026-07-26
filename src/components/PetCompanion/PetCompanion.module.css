@@ -1,0 +1,128 @@
+/* Питомец: слоёная композиция без фона, поверх контента страницы. */
+
+.root {
+  --pet-size: 180px;
+  display: block;
+  width: var(--pet-size);
+  /* Ограничиваем на узких экранах, чтобы питомец не занимал пол-телефона. */
+  max-width: min(var(--pet-size), 40vw);
+  pointer-events: auto;
+  border: 0;
+  padding: 0;
+  background: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.fixed {
+  position: fixed;
+  z-index: 60;
+}
+
+.bottomRight {
+  right: calc(20px + env(safe-area-inset-right, 0px));
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+
+.bottomLeft {
+  left: calc(20px + env(safe-area-inset-left, 0px));
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+
+.inline {
+  position: relative;
+  display: inline-block;
+}
+
+.interactive {
+  cursor: pointer;
+}
+
+.dragging {
+  cursor: grabbing;
+}
+
+.root:focus-visible {
+  outline: none;
+}
+
+.root:focus-visible .stage {
+  border-radius: 12px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 35%, transparent);
+}
+
+/* Сцена держит пропорции исходника, поэтому слои не съезжают
+   и не возникает layout shift до загрузки картинок. */
+.stage {
+  /* Обязательно block: на inline-элементе aspect-ratio и размеры
+     не работают, и питомец схлопывается в нулевую высоту. */
+  display: block;
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--pet-aspect, 287 / 290);
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  image-rendering: auto;
+  pointer-events: none;
+}
+
+/* Обёртка корпуса: её двигает контроллер, руки едут вместе с ней. */
+.figure {
+  position: absolute;
+  inset: 0;
+  transform-origin: var(--pet-body-origin, 50% 55%);
+  will-change: transform;
+}
+
+.arm {
+  will-change: transform;
+}
+
+.armLeft {
+  transform-origin: var(--pet-left-origin, 30% 42%);
+  z-index: 1;
+}
+
+.armRight {
+  transform-origin: var(--pet-right-origin, 66% 42%);
+  z-index: 3;
+}
+
+.body {
+  z-index: 2;
+}
+
+.eyes {
+  z-index: 4;
+  opacity: 0;
+  will-change: opacity;
+}
+
+/* Тень лежит под фигурой и слегка реагирует на высоту подъёма. */
+.shadow {
+  z-index: 0;
+  transform-origin: 50% 88%;
+  will-change: transform, opacity;
+}
+
+.fallback {
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .figure,
+  .arm,
+  .shadow {
+    /* Постоянных анимаций в этом режиме нет — снимаем и подсказку браузеру. */
+    will-change: auto;
+  }
+}
